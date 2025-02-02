@@ -1,0 +1,86 @@
+export default function formatDateTime(inputDate, option = 2) {
+  const date = new Date(inputDate);
+  const now = new Date();
+
+  const isToday = (d1, d2) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+
+  const isYesterday = (d1, d2) => {
+    const yesterday = new Date(d2);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return (
+      d1.getFullYear() === yesterday.getFullYear() &&
+      d1.getMonth() === yesterday.getMonth() &&
+      d1.getDate() === yesterday.getDate()
+    );
+  };
+
+  const formatTime = (date) => {
+    const hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const period = hours < 12 ? "上午" : "下午";
+    let formattedHours = hours % 12 || 12; // 12 小時制
+    if(period == "上午" && formattedHours == 12)
+    {
+      formattedHours = 0;
+    }
+    return `${period} ${formattedHours}:${minutes}`;
+  };
+
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const isSameYear = date.getFullYear() === now.getFullYear();
+
+  if (option === 1) {
+    // 僅顯示時間，上午/下午 hh:mm
+    return formatTime(date);
+  }
+
+  if (option === 2) {
+    // 根據日期顯示邏輯
+    if (isToday(date, now)) {
+      return formatTime(date); // 如果是今天，顯示時間
+    } else if (isYesterday(date, now)) {
+      return "昨天"; // 如果是昨天，顯示昨天
+    } else if (!isSameYear) {
+      return `${date.getFullYear()}-${formatDate(date)}`; // 如果不是同一年，顯示年份和日期
+    } else {
+      return formatDate(date); // 其他情況，僅顯示日期
+    }
+  }
+
+  if(option === 3) {
+    // 根據日期顯示邏輯
+    if (isToday(date, now)) {
+      return "今天"; // 如果是今天，顯示今天
+    } else if (isYesterday(date, now)) {
+      return "昨天"; // 如果是昨天，顯示昨天
+    } else if (!isSameYear) {
+      return `${date.getFullYear()}-${formatDate(date)}`; // 如果不是同一年，顯示年份和日期
+    } else {
+      return formatDate(date); // 其他情況，僅顯示日期
+    }
+  }
+
+  throw new Error("Invalid option. Use 1 for time-only, 2 for date logic.");
+}
+
+// // 測試範例
+// const testDate1 = "2025-01-25T00:44:02"; // 今天
+// const testDate2 = "2025-01-24T15:30:00"; // 昨天
+// const testDate3 = "2024-12-31T10:00:00"; // 去年
+
+// // 僅顯示時間
+// console.log(formatDateTime(testDate1, 1)); // "上午 12:44"
+
+// // 根據日期顯示邏輯
+// console.log(formatDateTime(testDate1, 2)); // "上午 12:44"（今天）
+// console.log(formatDateTime(testDate2, 2)); // "昨天"
+// console.log(formatDateTime(testDate3, 2)); // "2024-12-31"
