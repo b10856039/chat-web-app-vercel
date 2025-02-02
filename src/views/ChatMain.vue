@@ -67,7 +67,8 @@
       const getUserPhotoImage = async () =>{
           try
           {
-            const url = new URL("http://localhost:5266/api/user" + '/' + user.value.userId);
+            const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user" + user.value.userId);
+            // const url = new URL("http://localhost:5266/api/user" + '/' + user.value.userId);
             const response = await fetch(url, {
                 method: "GET",
                 headers:{
@@ -100,7 +101,8 @@
           try
           {
             roomList.value = [];
-            const url = new URL("http://localhost:5266/api/chatroom");
+            const url = new URL("https://chat-web-app-backend-render.onrender.com/api/chatroom");
+            // const url = new URL("http://localhost:5266/api/chatroom");
             url.searchParams.append('userId', user.value.userId);
 
             if(currentSection.value === 'all')
@@ -146,7 +148,8 @@
         try{
             for(const index in roomList.value)
             {
-                const url = new URL("http://localhost:5266/api/message");
+                const url = new URL("https://chat-web-app-backend-render.onrender.com/api/message");
+                // const url = new URL("http://localhost:5266/api/message");
                 url.searchParams.append('userId', user.value.userId);
                 url.searchParams.append('chatroomId', roomList.value[index].id);
                 url.searchParams.append('latestOne',true)
@@ -212,7 +215,7 @@
 
         // 初始化 SignalR 连接
         connection.value = new signalR.HubConnectionBuilder()
-          .withUrl("http://localhost:5266/chatHub")
+          .withUrl("https://chat-web-app-backend-render.onrender.com/chatHub")
           .build();
 
         connection.value.start()

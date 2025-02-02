@@ -143,10 +143,8 @@
             alert('手機或信箱不可為空');
             return;
           }
+          const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user");
 
-          const baseUrl = "http://localhost:5266/api/user";
-          // 檢查 email
-          let url = new URL(baseUrl);
           url.searchParams.append("query", inputEmail.value);
 
           let response = await fetch(url, {
@@ -189,7 +187,8 @@
 
       const UserCreate = async () =>{
         try{
-          const url = "http://localhost:5266/api/user"
+          const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user");
+          // const url = "http://localhost:5266/api/user"
           const response = await fetch(url, {
               method: "POST",
               headers: {

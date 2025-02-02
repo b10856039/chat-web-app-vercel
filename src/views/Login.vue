@@ -84,7 +84,8 @@ export default {
         if (!valid) return; // 驗證不通過則中斷
 
         try {
-          const url = "http://localhost:5266/api/auth/login";
+          const url = new URL("https://chat-web-app-backend-render.onrender.com/api/auth/login");
+          // const url = "http://localhost:5266/api/auth/login";
           const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

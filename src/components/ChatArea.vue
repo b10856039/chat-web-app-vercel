@@ -83,7 +83,8 @@
 
             const getHistoryMessages = async (newChat) => {
                 try{
-                const url = new URL("http://localhost:5266/api/message");
+                const url = new URL("https://chat-web-app-backend-render.onrender.com/api/message");
+                // const url = new URL("http://localhost:5266/api/message");
                 url.searchParams.append('userId', props.user.userId);
                 url.searchParams.append('chatroomId', newChat.id);
                 url.searchParams.append('latestOne',false)
