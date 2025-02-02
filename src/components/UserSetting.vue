@@ -233,11 +233,12 @@
                     });
                     
                     const data = await response.json();
-                    console.log(data)
                     if (data.token) {
                         // 儲存 token
                         localStorage.setItem("token", data.token);
                         await logout();
+                    }else{
+                        alert(data)
                     }
                 } catch (error) {
                     console.error(error);
