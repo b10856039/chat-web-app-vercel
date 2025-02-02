@@ -143,7 +143,7 @@
             alert('手機或信箱不可為空');
             return;
           }
-          const baseUrl = "https://chat-web-app-backend-render.onrender.com/api/auth/user";
+          const baseUrl = "https://chat-web-app-backend-render.onrender.com/api/user";
           // 檢查 email
           let url = new URL(baseUrl);
           url.searchParams.append("query", inputEmail.value);
