@@ -143,8 +143,8 @@
             alert('手機或信箱不可為空');
             return;
           }
-          const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user");
-
+          const baseUrl = "https://chat-web-app-backend-render.onrender.com/api/user";
+          const url = new URL(baseUrl);
           url.searchParams.append("query", inputEmail.value);
 
           let response = await fetch(url, {
