@@ -185,7 +185,7 @@
                         editData.PhotoImg = imageUrl;
                     }
 
-                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user" + props.user.userId);
+                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user/" + props.user.userId);
                     // const url = new URL("http://localhost:5266/api/user/" + props.user.userId);
                     const response = await fetch(url, {
                         method: "PATCH",
@@ -221,7 +221,7 @@
                 };
 
                 try {
-                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user" + props.user.userId);
+                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user/" + props.user.userId);
                     // const url = new URL("http://localhost:5266/api/user/"  + props.user.userId);
                     const response = await fetch(url, {
                         method: "PATCH",
@@ -258,7 +258,7 @@
                     if (editUser.value.phone !== props.user.phone) {
                         editData.Phone = editUser.value.phone;
                     }
-                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user" + props.user.userId);
+                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user/" + props.user.userId);
                     // const url = new URL("http://localhost:5266/api/user/" + props.user.userId);
                     const response = await fetch(url, {
                         method: "PATCH",

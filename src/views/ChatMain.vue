@@ -67,7 +67,7 @@
       const getUserPhotoImage = async () =>{
           try
           {
-            const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user" + user.value.userId);
+            const url = new URL("https://chat-web-app-backend-render.onrender.com/api/user/" + user.value.userId);
             // const url = new URL("http://localhost:5266/api/user" + '/' + user.value.userId);
             const response = await fetch(url, {
                 method: "GET",

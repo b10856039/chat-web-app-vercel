@@ -248,7 +248,7 @@
             const EditRoomName = ref("");
             const handleEditGroupConfirm = async ()=>{
                 try{
-                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/chatroom" + processRoomId.value);
+                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/chatroom/" + processRoomId.value);
                     // const url = "http://localhost:5266/api/chatroom/" + processRoomId.value
                     const response = await fetch(url, {
                         method: "PATCH",
@@ -278,7 +278,7 @@
 
             const handleDeleteGroupConfirm = async ()=>{
                 try{
-                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/chatroom" + processRoomId.value);
+                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/chatroom/" + processRoomId.value);
                     // const url = "http://localhost:5266/api/chatroom/" + processRoomId.value
 
                     const response = await fetch(url, {
@@ -305,7 +305,7 @@
 
             const handleJoinGroupConfirm = async ()=>{
                 try{
-                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/chatroom" + processRoomId.value + '/join');
+                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/chatroom/" + processRoomId.value + '/join');
                     // const url = "http://localhost:5266/api/chatroom/" + processRoomId.value + '/join'
                     const response = await fetch(url, {
                         method: "POST",
@@ -332,7 +332,7 @@
 
             const handleExitGroupConfirm = async ()=>{
                 try{
-                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/chatroom" + processRoomId.value + '/leave');
+                    const url = new URL("https://chat-web-app-backend-render.onrender.com/api/chatroom/" + processRoomId.value + '/leave');
                     // const url = "http://localhost:5266/api/chatroom/" + processRoomId.value + '/leave'
                     const response = await fetch(url, {
                         method: "DELETE",
