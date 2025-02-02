@@ -322,7 +322,6 @@
 
         .my-message {
             flex-direction: column;
-            
             .message-data{
                 display: flex;
                 flex-direction: row-reverse;
@@ -354,7 +353,7 @@
         }
 
         .other-message {
-            flex-direction: row; /* 頭貼在左邊 */
+            flex-direction: column; /* 頭貼在左邊 */
             .message-data{
                 display: flex;
                 flex-direction: row;
