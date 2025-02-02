@@ -188,7 +188,7 @@
 
       const UserCreate = async () =>{
         try{
-          const url = "http://localhost:5266/api/user"
+          const url = "https://chat-web-app-backend-render.onrender.com/api/user"
           const response = await fetch(url, {
               method: "POST",
               headers: {
