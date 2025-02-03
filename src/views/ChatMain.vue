@@ -15,6 +15,7 @@
   import ContentArea from '@/components/ContentArea.vue';
   import SideBar from '@/components/SideBar.vue';
   import * as signalR from '@microsoft/signalr';
+  import { useRouter } from 'vue-router';
 
   export default {
     name:'ChatMain',
@@ -173,7 +174,6 @@
       }
 
       const refreshUser = async () =>{
-        console.log('22')
         const token = localStorage.getItem('token');
         const payload = await JSON.parse(atob(token.split('.')[1]));
         user.value = {
@@ -193,50 +193,73 @@
 
       const connection = ref(null);
       onMounted(async () => {
+        try{
+          const token = localStorage.getItem('token');
 
-        const token = localStorage.getItem('token');
-        const payload = await JSON.parse(atob(token.split('.')[1]));
-        user.value = {
-            userId : parseInt(payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']),
-            username : payload['sub'],
-            email : payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'],
-            phone : payload['Phone'],
-            role : payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
-            state : payload['State'],
-        }
+          if (token) {
 
-        await getUserPhotoImage();
-        await getRoomList();
-        if (roomList.value.length > 0) {
-          await getLatestMessages();
-        }
+            const base64Url = token.split('.')[1]; // 取出 JWT 的 payload 部分
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); // 修正 base64 的格式
+            const jsonPayload = decodeURIComponent(
+                atob(base64)
+                    .split('')
+                    .map(c => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
+                    .join('')
+            );
 
-        window.addEventListener('resize', updateWindowWidth);
+            const payload = JSON.parse(jsonPayload);
 
-        // 初始化 SignalR 连接
-        connection.value = new signalR.HubConnectionBuilder()
-          .withUrl("https://chat-web-app-backend-render.onrender.com/chatHub")
-          .build();
+            user.value = {
+                userId : parseInt(payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']),
+                username : payload['sub'],
+                email : payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'],
+                phone : payload['Phone'],
+                role : payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
+                state : payload['State'],
+            }
 
-        connection.value.start()
-          .then(() => {
-            console.log("SignalR connection established");
-            // 加入所有聊天室
-            connection.value.invoke("JoinAllChatRoom",user.value.userId).catch(err => {
-              console.error("Error joining all rooms:", err);
+            await getUserPhotoImage();
+            await getRoomList();
+            if (roomList.value.length > 0) {
+              await getLatestMessages();
+            }
+
+            window.addEventListener('resize', updateWindowWidth);
+
+            // 初始化 SignalR 连接
+            connection.value = new signalR.HubConnectionBuilder()
+              .withUrl("https://chat-web-app-backend-render.onrender.com/chatHub")
+              .build();
+
+            connection.value.start()
+              .then(() => {
+                console.log("SignalR connection established");
+                // 加入所有聊天室
+                connection.value.invoke("JoinAllChatRoom",user.value.userId).catch(err => {
+                  console.error("Error joining all rooms:", err);
+                });
+              })
+              .catch(err => {
+                console.error("Error establishing SignalR connection:", err);
+              });
+
+            connection.value.on("ReceiveMessage", (message) => {
+                roomList.value.forEach((room, index) => {
+                  if(room.id === message.chatRoomId){
+                    roomList.value[index].latestMessage = message;
+                  }
+                });
             });
-          })
-          .catch(err => {
-            console.error("Error establishing SignalR connection:", err);
-          });
+          }else
+          {
+            const router = useRouter();
+            router.push('/login');
+          }
 
-        connection.value.on("ReceiveMessage", (message) => {
-            roomList.value.forEach((room, index) => {
-              if(room.id === message.chatRoomId){
-                roomList.value[index].latestMessage = message;
-              }
-            });
-        });
+        }catch(error)
+        {
+          console.log(error)
+        }
       });
 
       onUnmounted( async () => {

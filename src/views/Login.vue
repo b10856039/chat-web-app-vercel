@@ -304,6 +304,7 @@ export default {
           ::v-deep(.el-form-item) {
             flex-direction: column;
             align-items: flex-start;
+            width: 100%;
           }
 
           ::v-deep(.el-form-item__label) {
@@ -312,7 +313,7 @@ export default {
             margin-bottom: 5px;
           }
 
-          .el-input {
+          ::v-deep(.el-form-item__content) {
             width: 100%;
           }
         }
