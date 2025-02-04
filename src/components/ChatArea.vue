@@ -44,7 +44,15 @@
         </div>
         <div class="chat-input">
             <div class="input-wrapper">
-                <textarea v-model="newMessage" placeholder="請輸入訊息" @keypress.enter="sendMessage"></textarea>
+                <el-input
+                    v-model="newMessage"
+                    autosize
+                    type="textarea"
+                    placeholder="請輸入訊息"
+                    resize="none"
+                    @keypress.enter="sendMessage"
+                    v-loading="loading"
+                />
                 <button @click="sendMessage">
                     <el-icon>
                         <Search />
@@ -72,8 +80,7 @@
             const messages = ref([]);
             const errorMessages = ref("");
             const connection = inject("connection");
-            const token = localStorage.getItem('token');
-            const payload = JSON.parse(atob(token.split('.')[1]));
+            const loading = ref(false);
 
             const shouldShowDate = (index, message) => {
                 if (index === 0) return true; // 第一則訊息一定顯示日期
@@ -83,8 +90,7 @@
 
             const getHistoryMessages = async (newChat) => {
                 try{
-                const url = new URL("https://chat-web-app-backend-render.onrender.com/api/message");
-                // const url = new URL("http://localhost:5266/api/message");
+                const url = new URL( import.meta.env.VITE_API_URL + "message");
                 url.searchParams.append('userId', props.user.userId);
                 url.searchParams.append('chatroomId', newChat.id);
                 url.searchParams.append('latestOne',false)
@@ -112,15 +118,18 @@
             // 發送訊息的函數
             const sendMessage = async () => {
                 if (newMessage.value.trim() !== "") {
-                try {
-                    // 發送訊息到 SignalR Hub
-                    await connection.value.invoke('SendMessage', props.currentChat.id, props.user.userId, newMessage.value);
-                    newMessage.value = "";  // 清空輸入框
-                } catch (err) {
-                    console.error("Error sending message: ", err);
-                    // 如果有錯誤，顯示錯誤消息
-                    errorMessages.value = "Failed to send message. Please try again.";
-                }
+                    loading.value = true;
+                    try {
+                        // 發送訊息到 SignalR Hub
+                        await connection.value.invoke('SendMessage', props.currentChat.id, props.user.userId, newMessage.value);
+                        newMessage.value = "";  // 清空輸入框
+                        loading.value = false;
+                    } catch (err) {
+                        console.error("Error sending message: ", err);
+                        // 如果有錯誤，顯示錯誤消息
+                        errorMessages.value = "無法傳送訊息，請稍後再嘗試";
+                        loading.value = false;
+                    }
                 }
             };
 
@@ -232,7 +241,8 @@
                 messages,
                 sendMessage,
                 errorMessages,
-                leaveChatroom
+                leaveChatroom,
+                loading
             }
         }
     }
@@ -403,20 +413,29 @@
             flex: 1; /* 使寬度撐滿父容器 */
             max-width: 1000px; /* 可選：設定最大寬度，防止過大 */
             
-            textarea {
-                width: 100%; /* 寬度充滿容器 */
-                padding: 12px 50px 12px 20px; /* 右側 50px 空間給按鈕 */
-                font-size: 16px;
+            .el-textarea{
+                outline: none;
+                box-sizing: border-box; /* 確保寬度計算不超出範圍 */
                 border: 1px solid #ccc;
                 border-radius: 8px;
                 background-color: #f9f9f9;
                 transition: all 0.3s ease;
-                outline: none;
-                box-sizing: border-box; /* 確保寬度計算不超出範圍 */
-                resize: none;
+                padding: 12px 50px 12px 20px; /* 右側 50px 空間給按鈕 */
             }
 
-            textarea::placeholder {
+
+            ::v-deep(.el-textarea__inner) {
+                background-color: #f9f9f9;
+                overflow-y: auto;
+                max-height: 30vh;
+                box-shadow: none;
+            }
+
+            ::v-deep(.el-textarea__inner:focus){
+                box-shadow: none;
+            }
+
+            .el-textarea::placeholder {
                 color: #999;
                 font-style: italic;
             }

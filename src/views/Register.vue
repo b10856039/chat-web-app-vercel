@@ -143,7 +143,7 @@
             alert('手機或信箱不可為空');
             return;
           }
-          const baseUrl = "https://chat-web-app-backend-render.onrender.com/api/user";
+          const baseUrl = import.meta.env.VITE_API_URL + "user";
           // 檢查 email
           let url = new URL(baseUrl);
           url.searchParams.append("query", inputEmail.value);
@@ -188,7 +188,7 @@
 
       const UserCreate = async () =>{
         try{
-          const url = "https://chat-web-app-backend-render.onrender.com/api/user"
+          const url = import.meta.env.VITE_API_URL + "user"
           const response = await fetch(url, {
               method: "POST",
               headers: {
@@ -211,11 +211,6 @@
             console.log(error)
         }
       }
-
-      // 頁面載入時檢查是否有儲存的 userInputString
-      onMounted(() => {
-
-      });
 
       return {
         inputUsername,

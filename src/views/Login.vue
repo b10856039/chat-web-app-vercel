@@ -15,7 +15,11 @@
 
       <div class="login-body">
         <!-- el-form -->
-        <el-form ref="loginForm" :model="formData" :rules="rules" class="login-input">
+        <el-form ref="loginForm" :model="formData" 
+            :rules="rules" 
+            class="login-input" 
+            v-loading="loading" 
+            element-loading-text="登入中...">
           <!-- 手機/信箱 -->
           <el-form-item label="手機/信箱" prop="inputString">
             <el-input v-model="formData.inputString" placeholder="輸入手機或信箱" />
@@ -56,6 +60,7 @@ export default {
   setup() {
     const router = useRouter();
     const loginForm = ref(null);
+    const loading = ref(false);
 
     // 表單數據
     const formData = ref({
@@ -83,9 +88,11 @@ export default {
       loginForm.value.validate(async (valid) => {
         if (!valid) return; // 驗證不通過則中斷
 
+        loading.value = true;
+
         try {
-          const url = new URL("https://chat-web-app-backend-render.onrender.com/api/auth/login");
-          // const url = "http://localhost:5266/api/auth/login";
+          const url = new URL(import.meta.env.VITE_API_URL + "auth/login");
+
           const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -110,9 +117,12 @@ export default {
           } else {
             alert("登入失敗: Token 無效");
           }
+
+          loading.value = false;
         } catch (error) {
           console.error(error);
           alert("登入失敗!");
+          loading.value = false;
         }
       });
     };
@@ -132,6 +142,7 @@ export default {
       loginForm,
       handleLogin,
       rememberIsActive,
+      loading
     };
   },
 };
@@ -202,6 +213,7 @@ export default {
           text-align: right;
           align-items: center;
         }
+        
 
         /* 調整 el-input 樣式 */
         ::v-deep(.el-input__wrapper) {
