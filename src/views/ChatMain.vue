@@ -167,8 +167,16 @@
       const refreshUser = async () => {
         const token = localStorage.getItem('token');
         if (!token) return;
+        const base64Url = token.split('.')[1]; // 取出 JWT 的 payload 部分
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/'); // 修正 base64 的格式
+        const jsonPayload = decodeURIComponent(
+            atob(base64)
+                .split('')
+                .map(c => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
+                .join('')
+        );
 
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const payload = JSON.parse(jsonPayload);
         user.value = {
           userId: parseInt(payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']),
           username: payload['sub'],

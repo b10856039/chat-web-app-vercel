@@ -152,9 +152,6 @@
             const showDeleteGroup = ref(false);
             const processRoomId = ref(null);
 
-            const token = localStorage.getItem('token');
-            const payload = JSON.parse(atob(token.split('.')[1]));
-
             
             const hasjoinRoomList = ref([]);
             const unjoinRoomList = ref([]);

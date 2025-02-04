@@ -16,7 +16,7 @@
           <h3>註冊</h3>
         </div>
       </div>
-      <div class="register-body">
+      <div class="register-body" v-loading="loading" element-loading-text="註冊中，請稍候...">
         <div class="step-bar">
           <el-steps style="max-width: 600px" :active="active" finish-status="success">
               <el-step title="Step 1" />
@@ -89,6 +89,7 @@
 <script>
   import { ref, onMounted } from "vue";
   import { useRouter } from "vue-router";
+  import { ElMessage } from "element-plus";
 
   export default {
     name: "register",
@@ -98,6 +99,7 @@
       const inputEmail = ref('');
       const inputPhone = ref('');
       const inputPassword = ref('');
+      const loading = ref(false);
 
       const router = useRouter();
 
@@ -109,7 +111,7 @@
         if(active.value == 0)
         {
           if(inputUsername.value.trim() == ''){
-            alert('使用者名稱不可為空')
+            ElMessage.error('使用者名稱不可為空');
             return;
           }
         }
@@ -125,7 +127,7 @@
         if (active.value++ > 2){
           if(inputPassword.value.trim() == '')
           {
-            alert('密碼不可為空');
+            ElMessage.error('密碼不可為空');
             return;
           }
 
@@ -140,7 +142,7 @@
 
           if(inputEmail.value.trim() == '' || inputPhone.value.trim() == '')
           {
-            alert('手機或信箱不可為空');
+            ElMessage.error('手機或信箱不可為空');
             return;
           }
           const baseUrl = import.meta.env.VITE_API_URL + "user";
@@ -157,7 +159,7 @@
           let data = await response.json();
           if(data.length>0)
           {
-            alert('信箱已被使用');
+            ElMessage.error('信箱已被使用');
             return false;
           }
 
@@ -175,7 +177,7 @@
           data = await response.json();
           if(data.length>0)
           {
-            alert('手機已被使用');
+            ElMessage.error('手機已被使用');
             return false;
           }
 
@@ -188,6 +190,7 @@
 
       const UserCreate = async () =>{
         try{
+          loading.value = true;
           const url = import.meta.env.VITE_API_URL + "user"
           const response = await fetch(url, {
               method: "POST",
@@ -202,13 +205,18 @@
               })
               
           });
+          ElMessage.success("註冊成功！");
 
-        //跳轉至主頁
-        router.push("/");
+          //跳轉至主頁
+          router.push("/");
 
         }catch(error)
         {
+            ElMessage.error("註冊失敗，請稍後再試");
             console.log(error)
+        }
+        finally {
+          loading.value = false; // 關閉 Loading
         }
       }
 
@@ -220,6 +228,7 @@
         active,
         next,
         preview,
+        loading,
       };
     },
   };
