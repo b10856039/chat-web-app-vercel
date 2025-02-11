@@ -58,7 +58,7 @@
         </div>
 
         <div class="register-message">
-          <small>開發測試階段，註冊功能暫不設驗證機制</small>
+          <small>開發測試階段，驗證機制非最終結果</small>
         </div>
       </div>
     </div>
