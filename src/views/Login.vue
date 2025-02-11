@@ -52,100 +52,101 @@
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
+  import { ElMessage } from "element-plus";
+  import { ref, onMounted } from "vue";
+  import { useRouter } from "vue-router";
+  import ExceptMessageHandler from "@/utils/fetchExceptHandler"
 
-export default {
-  name: "login",
-  setup() {
-    const router = useRouter();
-    const loginForm = ref(null);
-    const loading = ref(false);
+  export default {
+    name: "login",
+    setup() {
+      const router = useRouter();
+      const loginForm = ref(null);
+      const loading = ref(false);
 
-    // 表單數據
-    const formData = ref({
-      inputString: "",
-      password: "",
-    });
+      // 表單數據
+      const formData = ref({
+        inputString: "",
+        password: "",
+      });
 
-    // 記住我
-    const rememberIsActive = ref(false);
+      // 記住我
+      const rememberIsActive = ref(false);
 
-    // 驗證規則
-    const rules = {
-      inputString: [
-        { required: true, message: "請輸入手機或信箱", trigger: "blur" },
-        { min: 5, message: "輸入長度至少 5 個字元", trigger: "blur" },
-      ],
-      password: [
-        { required: true, message: "請輸入密碼", trigger: "blur" },
-        { min: 4, message: "密碼長度至少 4 個字元", trigger: "blur" },
-      ],
-    };
+      // 驗證規則
+      const rules = {
+        inputString: [
+          { required: true, message: "請輸入手機或信箱", trigger: "blur" },
+          { min: 5, message: "輸入長度至少 5 個字元", trigger: "blur" },
+        ],
+        password: [
+          { required: true, message: "請輸入密碼", trigger: "blur" },
+          { min: 4, message: "密碼長度至少 4 個字元", trigger: "blur" },
+        ],
+      };
 
-    // 登入函式
-    const handleLogin = () => {
-      loginForm.value.validate(async (valid) => {
-        if (!valid) return; // 驗證不通過則中斷
+      // 登入函式
+      const handleLogin = () => {
+        loginForm.value.validate(async (valid) => {
+          if (!valid) return; // 驗證不通過則中斷
 
-        loading.value = true;
+          loading.value = true;
 
-        try {
-          const url = new URL(import.meta.env.VITE_API_URL + "auth/login");
+          try {
+            const url = new URL(import.meta.env.VITE_API_URL + "auth/login");
 
-          const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              InputString: formData.value.inputString,
-              Password: formData.value.password,
-            }),
-          });
+            const response = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                InputString: formData.value.inputString,
+                Password: formData.value.password,
+              }),
+            });
 
-          const data = await response.json();
+            const data = await response.json();
+            if(data.errors===null)
+            {
+              localStorage.setItem("token", data.data.token);
 
-          if (data.token) {
-            localStorage.setItem("token", data.token);
+              if (rememberIsActive.value) {
+                localStorage.setItem("userInputString", formData.value.inputString);
+              } else {
+                localStorage.removeItem("userInputString");
+              }
 
-            if (rememberIsActive.value) {
-              localStorage.setItem("userInputString", formData.value.inputString);
-            } else {
-              localStorage.removeItem("userInputString");
+              router.push("/");
+            }else{
+              ExceptMessageHandler(data.errors)
             }
-
-            router.push("/");
-          } else {
-            alert("登入失敗: Token 無效");
+            loading.value = false;
+          } catch (error) {
+            console.log(error)
+            ElMessage.error("登入出現錯誤，請稍後再試");
+            loading.value = false;
           }
+        });
+      };
 
-          loading.value = false;
-        } catch (error) {
-          console.error(error);
-          alert("登入失敗!");
-          loading.value = false;
+      // 頁面載入時檢查記住的帳號
+      onMounted(() => {
+        const savedInput = localStorage.getItem("userInputString");
+        if (savedInput) {
+          formData.value.inputString = savedInput;
+          rememberIsActive.value = true;
         }
       });
-    };
 
-    // 頁面載入時檢查記住的帳號
-    onMounted(() => {
-      const savedInput = localStorage.getItem("userInputString");
-      if (savedInput) {
-        formData.value.inputString = savedInput;
-        rememberIsActive.value = true;
-      }
-    });
-
-    return {
-      formData,
-      rules,
-      loginForm,
-      handleLogin,
-      rememberIsActive,
-      loading
-    };
-  },
-};
+      return {
+        formData,
+        rules,
+        loginForm,
+        handleLogin,
+        rememberIsActive,
+        loading
+      };
+    },
+  };
 </script>
 
 

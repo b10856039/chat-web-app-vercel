@@ -1,96 +1,98 @@
 <template>
-    <img
-    v-if="user.photoImg && user.photoImg !== ''"
-    :src="user.photoImg"
-    @click="toggleDropdown"
-    class="user-icon"
-    />
-    <img
-    v-else
-    src="../assets/user.png"
-    @click="toggleDropdown"
-    class="user-icon"
-    />
+    <el-avatar v-if="user.photoImg && user.photoImg !== ''" :size="50" :src="user.photoImg" @click="toggleDropdown"/>
+    <el-avatar v-else :src="userPlaceholder" :size="50" @click="toggleDropdown"></el-avatar>
+  
     <DropDown ref="dropdownElement" trigger="manual" :show-icon="false">
-        
-        <template #content>
+      <template #content>
+        <div class="dropdown-header">
+          <div class="dropdown-icon">
+            <el-avatar v-if="user.photoImg && user.photoImg !== ''" :size="50" :src="user.photoImg"/>
+            <el-avatar v-else :src="userPlaceholder" :size="50"></el-avatar>
+          </div>
+          <div class="dropdown-name">
+            <p class="dropdown-showname">{{ user.showname }}</p>
             <span class="dropdown-username">{{ user.username }}</span>
-            <el-dropdown-menu>
+          </div>
+        </div>
+        <div class="dropdown-body">
+          <el-dropdown-menu>
             <el-dropdown-item @click="showEditUser = true" icon="edit">
-                編輯個人資料
+              編輯個人資料
             </el-dropdown-item>
             <el-dropdown-item @click="logout" icon="SwitchButton">
-                登出
+              登出
             </el-dropdown-item>
-            </el-dropdown-menu>
-        </template>
+          </el-dropdown-menu>
+        </div>
+      </template>
     </DropDown>
-
-    <custom-dialog v-model="showEditUser" title="個人設定" dialogType="none" :before-close="resetEditUser">
-    <template #content>
-      <!-- 大頭貼上傳 -->
-      <div class="dialog-photoEdit">
-        <div class="photoEdit-header">
-          <h4>大頭貼設定</h4>
-        </div>
-        <div class="photo-body">
-          <img v-if="editUser.photoImg" :src="editUser.photoImg" alt="預覽圖片" width="100" height="100" />
-          <img v-else src="../assets/user.png" alt="預覽圖片" width="100" height="100">
-          <el-upload ref="upload" :show-file-list="false" @change="handleFileChange" :before-upload="beforeUpload" action="#">
-            <el-button @click="showPhotoButtons = true">選擇大頭貼</el-button>
-          </el-upload>
-        </div>
-        <div class="photo-submit" v-if="showPhotoButtons">
-          <el-button type="primary" @click="resetEditUser(1)">重置</el-button>
-          <el-button type="primary" @click="handleChangePhoto">修改</el-button>
-        </div>
-      </div>
-
-      <!-- 使用者資訊 -->
-      <div class="dialog-inputEdit">
-        <div class="dialog-userInfo">
-          <div class="userInfo-header">
-            <h4>使用者設定</h4>
-            <el-button type="primary" @click="toggleEditUserInfo">
-              {{ isEditingUserInfo ? '關閉' : '編輯' }}
-            </el-button>
+  
+    <custom-dialog v-model="showEditUser" 
+                title="個人設定" 
+                dialogType="none" 
+                :before-close="resetEditUser"
+    >
+      <template #content>
+        <!-- 大頭貼上傳 -->
+        <AvatarUploader :defaultImgUrl="defaultImgUrl" :apiUrl="avatarUploadUrl" :photoImg="editUser.photoImg" @userUpdate="handleEmitData"></AvatarUploader>
+  
+        <!-- 使用者資訊 -->
+        <el-form :model="editUser" :rules="rules" ref="userForm" label-width="80px">
+          <div class="dialog-inputEdit">
+            <div class="dialog-userInfo">
+              <div class="userInfo-header">
+                <h4>使用者設定</h4>
+                <el-button type="primary" @click="toggleEditUserInfo">
+                  {{ isEditingUserInfo ? '關閉' : '編輯' }}
+                </el-button>
+              </div>
+              <div class="userInfo-body">
+                <el-form-item label="使用者名稱:" prop="username">
+                  <el-input v-model="editUser.username" :disabled="!isEditingUserInfo" placeholder="輸入使用者名稱" required />
+                </el-form-item>
+                <el-form-item label="顯示名稱:" prop="showname">
+                  <el-input v-model="editUser.showname" :disabled="!isEditingUserInfo" placeholder="輸入顯示名稱" required />
+                </el-form-item>
+                <el-form-item label="電子信箱:" prop="email">
+                  <el-input v-model="editUser.email" :disabled="!isEditingUserInfo" placeholder="輸入電子信箱" required />
+                </el-form-item>
+                <el-form-item label="手機:" prop="phone">
+                  <el-input v-model="editUser.phone" :disabled="!isEditingUserInfo" placeholder="輸入手機" required />
+                </el-form-item>
+              </div>
+              <div class="userInfo-submit" v-if="isEditingUserInfo">
+                <el-button type="primary" :disabled="!isEditingUserInfo" @click="handleChangeUserSetting">修改</el-button>
+              </div>
+            </div>
           </div>
-          <div class="userInfo-body">
-            <label>使用者名稱:</label>
-            <el-input v-model="editUser.username" :disabled="!isEditingUserInfo" placeholder="輸入使用者名稱" required />
-            <label>電子信箱:</label>
-            <el-input v-model="editUser.email" :disabled="!isEditingUserInfo" placeholder="輸入電子信箱" required />
-            <label>手機:</label>
-            <el-input v-model="editUser.phone" :disabled="!isEditingUserInfo" placeholder="輸入手機" required />
-          </div>
-          <div class="userInfo-submit" v-if="isEditingUserInfo">
-            <el-button type="primary" @click="handleChangeUserSetting">修改</el-button>
-          </div>
-        </div>
-
+        </el-form>
+  
         <!-- 密碼設定 -->
-        <div class="dialog-userPassword">
-          <div class="userPassword-header">
-            <h4>密碼設定</h4>
-            <el-button type="primary" @click="toggleEditPassword">
-              {{ isEditingPassword ? '關閉' : '編輯' }}
-            </el-button>
+        <el-form :model="editUser" :rules="passwordRules" ref="passForm" label-width="80px">
+          <div class="dialog-userPassword">
+            <div class="userPassword-header">
+              <h4>密碼設定</h4>
+              <el-button type="primary" @click="toggleEditPassword">
+                {{ isEditingPassword ? '關閉' : '編輯' }}
+              </el-button>
+            </div>
+            <div class="userPassword-body">
+              <el-form-item label="舊密碼:" prop="oldPassword">
+                <el-input v-model="oldPassword" :disabled="!isEditingPassword" placeholder="輸入舊密碼" required />
+              </el-form-item>
+              <el-form-item label="新密碼:" prop="newPassword">
+                <el-input v-model="newPassword" :disabled="!isEditingPassword" placeholder="輸入新密碼" required />
+              </el-form-item>
+            </div>
+            <div class="userPassword-submit" v-if="isEditingPassword">
+              <el-button type="primary" @click="handleChangePassword">修改</el-button>
+            </div>
           </div>
-          <div class="userPasswrod-body">
-            <label>舊密碼:</label>
-            <el-input v-model="oldPassword" :disabled="!isEditingPassword" placeholder="輸入舊密碼" required />
-            <label>新密碼:</label>
-            <el-input v-model="newPassword" :disabled="!isEditingPassword" placeholder="輸入新密碼" required />
-          </div>
-          <div class="userPassword-submit" v-if="isEditingPassword">
-            <el-button type="primary" @click="handleChangePassword">修改</el-button>
-          </div>
-        </div>
-      </div>
-    </template>
-  </custom-dialog>
-
-</template>
+        </el-form>
+      </template>
+    </custom-dialog>
+  
+  </template>
 
 
 <script>
@@ -99,11 +101,17 @@
     import { useRouter } from 'vue-router'; // 引入 useRouter
     import CustomDialog from "@/components/Dialog.vue";
     import DropDown from "@/components/DropDown.vue";
+    import userPlaceholder from '@/assets/user.png';
+    import AvatarUploader from './AvatarUploader.vue';
+
+    import { ElMessage } from 'element-plus';
+    import ExceptMessageHandler from "@/utils/fetchExceptHandler";
 
     export default {
         components:{
             CustomDialog,
-            DropDown
+            DropDown,
+            AvatarUploader
         },
         props:{
             user : Object
@@ -112,11 +120,53 @@
         setup(props,{emit}) {
 
             const showEditUser = ref(false);
+            const userForm = ref(null);
+            const passForm = ref(null);
             const editUser = ref({ ...props.user });
+            const oldPassword = ref('');
+            const newPassword = ref('');
 
-            const userPhoto = ref(null);  // 用來儲存圖片文件
+            const avatarUploadUrl = ref(import.meta.env.VITE_API_URL + "user/" + props.user.userId);
+            const defaultImgUrl = ref("../assets/user.png");
 
-            const showPhotoButtons = ref(false); // 控制大頭貼的按鈕顯示
+            const rules = {
+                username: [
+                    { required: true, message: "請輸入使用者名稱", trigger: "blur" },
+                    { 
+                    pattern: /^[a-zA-Z0-9_.]+$/, 
+                    message: "使用者名稱只能包含英文、數字、底線 (_) 和句號 (.)", 
+                    trigger: ["blur", "change"]
+                    },
+                ],
+                showname: [
+                    { required: true, message: "請輸入顯示名稱", trigger: "blur" },
+                ],
+                email: [
+                    { required: true, message: "請輸入信箱", trigger: "blur" },
+                    { type: "email", message: "請輸入正確的信箱格式", trigger: ["blur"] },
+                ],
+                phone: [
+                    { required: true, message: "請輸入手機", trigger: "blur" },
+                    { pattern: /^[0-9]{10}$/, message: "手機號碼須為 10 位數字", trigger: "blur" },
+                ],
+                password: [
+                    { required: true, message: "請輸入密碼", trigger: "blur" },
+                    { min: 3, message: "密碼長度至少 3 個字元", trigger: "blur" },
+                ],
+                };
+                
+            const passwordRules = {
+                oldPassword: [
+                    { required: true, message: "請輸入舊密碼", trigger: "blur" },
+                ],
+                newPassword: [
+                    { required: true, message: "請輸入新密碼", trigger: "blur" },
+                ],
+            };
+
+
+            
+
             const isEditingUserInfo = ref(false); // 控制使用者資訊編輯狀態
             const isEditingPassword = ref(false); // 控制密碼設定編輯狀態
 
@@ -128,110 +178,48 @@
                 isEditingPassword.value = !isEditingPassword.value;
             };
 
-            const beforeUpload = (file) => {
-                const fileType = file.type.split('/')[1]; // 取得檔案類型
-                if (['jpeg', 'jpg', 'png'].includes(fileType)) {
-                    return true;
-                    // if (file.size <= 5 * 1024 * 1024) {  // 最大 5MB
-                    //     return true;
-                    // } else {
-                    //     alert('圖片大小不能超過 5MB');
-                    //     return false;
-                    // }
-                } else {
-                    alert('僅支持 JPG 或 PNG 格式的圖片');
-                    return false;
-                }
-            };
-
-            const handleFileChange = (file, fileList) => {
-                // 用 FileReader 預覽圖片
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    let base64String = e.target.result;
-                    const base64Data = base64String.split(',')[1];  // 拿到單獨的 Base64 部分
-                    const mimeType = file.type;  // 獲取圖片類型（例如 image/png 或 image/jpeg）
-                    editUser.value.photoImg = `data:${mimeType};base64,${base64Data}`;
-                    showPhotoButtons.value = true;
-                };
-                userPhoto.value = file.raw;
-                reader.readAsDataURL(file.raw);
-            };
-
-            // 調整圖片大小至 128x128
-            const resizeAndConvertImage = (file) => {
-                return new Promise((resolve, reject) => {
-                    const img = new Image();
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        img.src = e.target.result;
-                    };
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        canvas.width = 128;
-                        canvas.height = 128;
-                        ctx.drawImage(img, 0, 0, 128, 128);
-                        const resizedImage = canvas.toDataURL(file.type);
-                        resolve(resizedImage);
-                    };
-                });
-            };
-
-            const handleChangePhoto = async () => {
-                try {
-                    const editData = {};
-
-                    if (userPhoto.value) {
-                        const imageUrl = await resizeAndConvertImage(userPhoto.value);
-                        editData.PhotoImg = imageUrl;
-                    }
-
-                    const url = new URL( import.meta.env.VITE_API_URL + "user/" + props.user.userId);
-                    const response = await fetch(url, {
-                        method: "PATCH",
-                        headers: {
-                            "Content-Type": "application/json", 
-                            "Authorization": `Bearer ${localStorage.getItem('token')}`
-                        },
-                        body: JSON.stringify(editData)
-                    });
-
-                    const data = await response.json();
-                    if (data.token) {
-                        // 儲存 token
-                        localStorage.setItem("token", data.token);
-                    }
-                    showPhotoButtons.value = false;
-                    emit("userUpdate",true);
-                } catch (error) {
-                    console.log(error);
-                }
-            }
-
+            
             const handleChangeUserSetting = async () => {
                 try {
+                    if (!userForm.value) {
+                        console.error("表單參考未正確綁定");
+                        return;
+                    }
+
+                    let userValid = true;
+                    // 等待驗證結果
+                    await userForm.value.validate((valid) => {
+                        if (!valid) {
+                            ElMessage.error("請修正錯誤後再繼續");
+                            userValid = false;
+                            return;
+                        }
+                    });
+                    if(!userValid){
+                        return;
+                    }
+
+                    // 驗證通過，繼續執行 API 呼叫
                     const editData = {};
+
                     if (editUser.value.username !== props.user.username) {
                         editData.Username = editUser.value.username;
                     }
-
+                    if (editUser.value.showname !== props.user.showname) {
+                        editData.ShowUsername = editUser.value.showname;
+                    }
                     if (editUser.value.email !== props.user.email) {
                         editData.Email = editUser.value.email;
                     }
-
                     if (editUser.value.phone !== props.user.phone) {
                         editData.Phone = editUser.value.phone;
                     }
-                    const url = new URL( import.meta.env.VITE_API_URL + "user/" + props.user.userId);
 
+                    const url = new URL(import.meta.env.VITE_API_URL + "user/" + props.user.userId);
                     const response = await fetch(url, {
                         method: "PATCH",
                         headers: {
-                            "Content-Type": "application/json", 
+                            "Content-Type": "application/json",
                             "Authorization": `Bearer ${localStorage.getItem('token')}`
                         },
                         body: JSON.stringify(editData)
@@ -239,21 +227,43 @@
 
                     const data = await response.json();
 
-                    if (data.token) {
-                        // 儲存 token
-                        localStorage.setItem("token", data.token);
+                    if(data.errors===null)
+                    {
+                        ElMessage.success(data.data);
+                        isEditingUserInfo.value = false;
+                        emit("userUpdate", true);
                     }
-                    isEditingUserInfo.value = false;
-                    emit("userUpdate",true);
+                    else
+                    {
+                        ExceptMessageHandler(data.errors);
+                    }
+
                 } catch (error) {
-                    console.log(error);
-                    isEditingUserInfo.value = false;
+                    console.error(error);
                 }
             };
 
-            const oldPassword = ref('');
-            const newPassword = ref('');
             const handleChangePassword = async () => {
+
+
+                if (!passForm.value) {
+                    console.error("表單參考未正確綁定");
+                    return;
+                }
+
+                let passValid = true;
+                // 等待驗證結果
+                await passForm.value.validate((valid) => {
+                    if (!valid) {
+                        ElMessage.error("請修正錯誤後再繼續");
+                        passValid = false;
+                        return;
+                    }
+                });
+                if(!passValid){
+                    return;
+                }
+
                 if (!oldPassword.value || !newPassword.value) {
                     alert('請輸入完整的密碼');
                     return;
@@ -277,16 +287,25 @@
                     });
                     
                     const data = await response.json();
-                    if (data.token) {
+                    if(data.errors===null)
+                    {
+                        ElMessage.success(data.data)
                         // 儲存 token
-                        localStorage.setItem("token", data.token);
+                        localStorage.setItem("token", data.data.token);
                         await logout();
-                    }else{
-                        alert(data)
                     }
+                    else
+                    {
+                        ExceptMessageHandler(data.errors);
+                    }
+
                 } catch (error) {
                     console.error(error);
                 }
+            }
+
+            const handleEmitData = (value) => {
+                emit('userUpdate',value)
             }
 
             const dropdownElement = ref(null); 
@@ -298,10 +317,6 @@
 
             const resetEditUser = (closeType = null) => {
                 if(closeType == 1){
-                    editUser.value = { ...props.user };
-                    showPhotoButtons.value = false;
-                }
-                else if(closeType == 2){
                     oldPassword.value = '';
                     newPassword.value = '';
                 }
@@ -312,7 +327,6 @@
                     showEditUser.value = false;
                     isEditingUserInfo.value = false;
                     isEditingPassword.value = false;
-                    showPhotoButtons.value = false;
                 }
 
             };
@@ -327,27 +341,30 @@
 
 
             return {
+                userPlaceholder,
                 logout,
                 dropdownElement,
                 toggleDropdown,
 
                 showEditUser,
+                avatarUploadUrl,
+                defaultImgUrl,
+                userForm,
+                passForm,
                 editUser,
-                userPhoto,
-                beforeUpload,
-                handleFileChange,
-                handleChangePhoto,
-                handleChangeUserSetting,
                 oldPassword,
                 newPassword,
+                rules,
+                passwordRules,
+                handleChangeUserSetting,
                 handleChangePassword,
                 resetEditUser,
+                handleEmitData,
 
                 toggleEditUserInfo,
                 toggleEditPassword,
                 isEditingUserInfo,
                 isEditingPassword,
-                showPhotoButtons,
             }
         }
     }
@@ -355,20 +372,138 @@
 
 
 <style lang="scss" scoped>
-    .user-icon {
-        width: 100%; /* 填滿父容器 */
-        height: 100%; /* 自適應 */
-        object-fit: cover; /*使圖片不變形 */
-        display: block; 
-        margin: 0; 
-        padding: 0; 
-    }
-
-    .dropdown-username{
+    /* 整體下拉選單樣式 */
+    .dropdown-header {
         display: flex;
-        justify-content: center;
+        justify-content: flex-start; /* Align items to the left */
         align-items: center;
-        font-size: 16px;
+        padding: 10px;
+        border-bottom: 1px solid #5e5e5e;
+        width: 200px; /* Set a fixed width for the dropdown */
     }
 
+    /* 大頭貼容器 */
+    .dropdown-icon {
+        margin-right: 10px; /* Add some space between avatar and text */
+    }
+
+    /* 使用者名稱區塊 */
+    .dropdown-name {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    /* 顯示名稱 */
+    .dropdown-showname {
+        font-size: 16px;
+        color: #333; /* Darker text color for showname */
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* 使用者名稱 */
+    .dropdown-username {
+        font-size: 12px;
+        color: #5e5e5e;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* 下拉選單內容區域 */
+    .dropdown-body {
+        padding: 5px 10px;
+    }
+
+    /* 下拉選單項目 */
+    .el-dropdown-item {
+        font-size: 14px;
+        padding: 10px 15px;
+        transition: background-color 0.2s ease; /* Smooth transition effect */
+    }
+
+    /* 當鼠標懸停時，改變下拉項目的背景顏色 */
+    .el-dropdown-item:hover {
+        background-color: #f5f5f5;
+    }
+
+    /* 使用者資料編輯區塊 */
+    .dialog-userInfo {
+        padding: 15px;
+        border-top: 1px solid #e8e8e8;
+    }
+
+    /* 使用者名稱與顯示名稱編輯區 */
+    .userInfo-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    /* 編輯按鈕 */
+    .userInfo-header .el-button {
+        font-size: 14px;
+    }
+
+    /* 表單項目標籤樣式 */
+    .el-form-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    ::v-deep(.el-form-item__label){
+        white-space: nowrap;  /* 防止換行 */
+    }
+
+    .el-form-item__content {
+        flex-grow: 1; /* 讓內容部分自適應 */
+    }
+
+    /* 表單的輸入框樣式 */
+    .el-input {
+        font-size: 14px;
+    }
+
+    /* 密碼設定部分 */
+    .dialog-userPassword {
+        padding: 15px;
+        border-top: 1px solid #e8e8e8;
+    }
+
+    .userPassword-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .userPassword-body {
+        margin-bottom: 10px;
+    }
+
+    /* 密碼框的樣式 */
+    .el-input {
+        font-size: 14px;
+    }
+
+    /* 按鈕樣式 */
+    .userPassword-submit {
+        display: flex;
+        margin-top: 10px;
+    }
+
+    /* 增加表單按鈕的邊距 */
+    .el-button {
+        margin-left: 10px;
+    }
 </style>

@@ -4,7 +4,7 @@
       <SideBar v-if="userReady" :user="user" @select="setCurrentSection" @userUpdate="refreshUser"  class="Sidebar"></SideBar>
       <ContentArea v-if="userReady" @select="setCurrentChatRoom" :user="user" :currentSection="currentSection" :roomList="roomList" class="ContentArea"></ContentArea>
 
-      <ChatArea v-if="userReady" :user="user" v-model:currentChat="currentChat" class="ChatArea"></ChatArea>
+      <ChatArea v-if="userReady" :user="user" v-model:currentChat="currentChat" class="ChatArea" @MessageUpdate="handleCurrentChatLatestMsg"></ChatArea>
     </div>
 </template>
 
@@ -15,11 +15,13 @@
   import { useRouter } from 'vue-router';
   import { ElLoading } from 'element-plus'; // 引入 Element Plus 的 Loading 服務
   import * as signalR from '@microsoft/signalr'; // 引入 SignalR 進行即時通訊
+  import getImageType from "@/utils/imageHandle";
 
   // 引入子元件
   import ChatArea from '@/components/ChatArea.vue';
   import ContentArea from '@/components/ContentArea.vue';
   import SideBar from '@/components/SideBar.vue';
+  import ExceptMessageHandler from "@/utils/fetchExceptHandler";
 
   export default {
     name: 'ChatMain',
@@ -64,48 +66,11 @@
         currentChat.value = chatroom;
       };
 
-      /**
-       * 解析 Base64 影像類型
-       * @param {string} base64 - Base64 字串
-       * @returns {string} - 影像 MIME 類型
-       */
-      function getImageType(base64) {
-        const pngSignature = 'iVBORw0KGgo';
-        const jpegSignature = '/9j/';
-        const gifSignature = 'R0lGODlh';
 
-        if (base64.startsWith(pngSignature)) return 'image/png';
-        if (base64.startsWith(jpegSignature)) return 'image/jpeg';
-        if (base64.startsWith(gifSignature)) return 'image/gif';
 
-        return '';
-      }
-
-      /**
-       * 取得使用者大頭貼
-       */
-      const getUserPhotoImage = async () => {
-        try {
-          const url = new URL(import.meta.env.VITE_API_URL + "user/" + user.value.userId);
-          const response = await fetch(url, {
-            method: "GET",
-            headers: {
-              "Authorization": `Bearer ${localStorage.getItem('token')}`
-            }
-          });
-
-          const data = await response.json();
-
-          if (data.photoImg.length > 0) {
-            const imagetype = getImageType(data.photoImg);
-            user.value.photoImg = imagetype ? `data:${imagetype};base64,${data.photoImg}` : "";
-          } else {
-            user.value.photoImg = "";
-          }
-          userReady.value = true;
-        } catch (error) {
-          console.error("Error fetching user photo:", error);
-        }
+      const handleCurrentChatLatestMsg = async () => {
+        await getRoomList();
+        await getLatestMessages();
       };
 
       /**
@@ -129,7 +94,30 @@
             }
           });
 
-          roomList.value = await response.json();
+          const data = await response.json();
+
+          if(data.errors===null)
+          {
+            roomList.value = data.data;
+            roomList.value = roomList.value.map( (room) => {
+              if (room.photoImg.length > 0) {
+                const imagetype = getImageType(room.photoImg);
+                room.photoImg = imagetype ? `data:${imagetype};base64,${room.photoImg}` : ""
+                return room;
+              } else {
+                room.photoImg = ""
+                return room;
+              }
+            })
+          }
+          else
+          {
+              ExceptMessageHandler(data.errors);
+          }
+
+
+
+
         } catch (error) {
           console.error("Error fetching chat rooms:", error);
         }
@@ -138,28 +126,88 @@
       /**
        * 取得最新的聊天室訊息
        */
-      const getLatestMessages = async () => {
-        try {
-          for (const index in roomList.value) {
-            const url = new URL(import.meta.env.VITE_API_URL + "message");
-            url.searchParams.append('userId', user.value.userId);
-            url.searchParams.append('chatroomId', roomList.value[index].id);
-            url.searchParams.append('latestOne', true);
+       const getLatestMessages = async () => {
+          try {
+              for (const index in roomList.value) {
+                  const url = new URL(import.meta.env.VITE_API_URL + "message");
+                  url.searchParams.append('userId', user.value.userId);
+                  url.searchParams.append('chatroomId', roomList.value[index].id);
+                  url.searchParams.append('latestOne', true);
 
-            const response = await fetch(url, {
-              method: "GET",
-              headers: {
-                "Authorization": `Bearer ${localStorage.getItem('token')}`
+                  const response = await fetch(url, {
+                      method: "GET",
+                      headers: {
+                          "Authorization": `Bearer ${localStorage.getItem('token')}`
+                      }
+                  });
+
+                  const data = await response.json();
+
+
+                  if(data.errors===null)
+                  {
+                    roomList.value[index].latestMessage = data.data[0]; // 存儲最新訊息
+                  }
+                  else
+                  {
+                      ExceptMessageHandler(data.errors);
+                  }
               }
-            });
-
-            const data = await response.json();
-            roomList.value[index].latestMessage = data[0];
+              // 排序聊天室列表，將有最新訊息的排前面
+              roomList.value.sort((a, b) => {
+                  if (!a.latestMessage) return 1; // 沒有訊息的排後面
+                  if (!b.latestMessage) return -1;
+                  return new Date(b.latestMessage.sentAt) - new Date(a.latestMessage.sentAt); // 根據最新訊息時間排序
+              });
+          } catch (error) {
+              console.error("Error fetching latest messages:", error);
           }
-        } catch (error) {
-          console.error("Error fetching latest messages:", error);
-        }
       };
+
+
+      const getUser = async (userId) =>{
+        try{
+          const url = new URL(import.meta.env.VITE_API_URL + "user" + "/" + userId);
+          const response = await fetch(url, {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+
+          const data = await response.json();
+
+          if(data.errors===null)
+          {
+
+            user.value = {
+              userId: data.data.id,
+              username: data.data.username,
+              showname: data.data.showUsername,
+              photoImg: data.data.photoImg,
+              email: data.data.email,
+              phone: data.data.phone,
+              role: data.data.role,
+              state: data.data.state,
+            }
+
+            if (user.value.photoImg.length > 0) {
+              const imagetype = getImageType(user.value.photoImg);
+              user.value.photoImg = imagetype ? `data:${imagetype};base64,${user.value.photoImg}` : "";
+            } else {
+              user.value.photoImg = "";
+            }
+          }
+          else
+          {
+            console.log(data)
+            ExceptMessageHandler(data.errors);
+          }
+
+        }catch(err){
+          console.log(err)
+        }
+      }
 
       /**
        * 解析 JWT Token，獲取使用者資訊
@@ -176,20 +224,14 @@
                 .join('')
         );
 
-        const payload = JSON.parse(jsonPayload);
-        user.value = {
-          userId: parseInt(payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']),
-          username: payload['sub'],
-          email: payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'],
-          phone: payload['Phone'],
-          role: payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
-          state: payload['State'],
-        };
-
-        await getUserPhotoImage();
+        const payload = await JSON.parse(jsonPayload);
+        await getUser(parseInt(payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']))
         await getRoomList();
         if (roomList.value.length > 0) {
           await getLatestMessages();
+          userReady.value = true;
+        }else{
+          userReady.value = true;
         }
       };
 
@@ -249,7 +291,18 @@
 
       const updateWindowWidth = () => { windowWidth.value = window.innerWidth; };
 
-      return { user, userReady, roomList, currentSection, currentChat, setCurrentSection, setCurrentChatRoom, refreshUser, chatClass };
+      return { 
+        user, 
+        userReady, 
+        roomList, 
+        currentSection, 
+        currentChat, 
+        setCurrentSection, 
+        setCurrentChatRoom, 
+        refreshUser, 
+        chatClass,
+        handleCurrentChatLatestMsg
+      };
     }
   };
 </script>

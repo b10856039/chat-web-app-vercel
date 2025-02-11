@@ -64,7 +64,6 @@
             }
 
             const handleEmitData = (data) => {
-                console.log(data)
                 emit('userUpdate',data)
             }
 

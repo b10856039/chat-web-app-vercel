@@ -3,7 +3,7 @@
     v-model="isVisible"
     :title="title"
     :width="width"
-    :before-close="handleBeforeClose"
+    :before-close="beforeClose"
   >
     <slot name="content">Default content</slot>
     <template #footer>

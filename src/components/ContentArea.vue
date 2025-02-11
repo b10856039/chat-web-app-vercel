@@ -21,49 +21,28 @@
                     </template>
                 </el-input>
             </div>
-            <div v-if="currentSection === 'all'" class="content-section">
-                <div v-for="(room, index) in roomList" :key="room.Id" v-on:click="selectChatRoom(index)" :class="['content-chatroom', { 'selected-room': selectRoom === room , 'room-hidden': !isMatch(room, searchContent) }]">
-                    <div class="content-roomname">
-                        <span v-if="room.roomname != null" class="roomname-title">{{ room.roomname }}({{ room.participants.length }})</span>
-                        <span v-else class="roomname-title">{{ room.latestMessage.senderName }}</span>
-                        <small v-if="room.latestMessage" class="roomname-latestTime">{{ formatDateTime(room.latestMessage.sentAt,2) }}</small>
+            <div v-if="currentSection === 'all' || currentSection === 'friends' || currentSection === 'groups'" class="content-section">
+                <div v-for="(room, index) in roomList" :key="room.id" v-on:click="selectChatRoom(index)" :class="['content-chatroom', { 'selected-room': selectRoom!=null && selectRoom.id === room.id , 'room-hidden': !isMatch(room, searchContent) }]">
+
+                    <div class="content-avatar">
+                        <el-avatar v-if="room.photoImg && room.photoImg !== ''" :size="50" :src="room.photoImg"/>
+                        <el-avatar v-else-if="room.roomType == 1" :src="textchatPlaceholder" :size="50"></el-avatar>
+                        <el-avatar v-else :src="userPlaceholder" :size="50"></el-avatar>
                     </div>
-                    <div class="content-latestMessage">
-                        <span v-if="room.latestMessage">
-                            {{ room.latestMessage.senderName }} : {{ latestMessageCountReplacer(room.latestMessage.content) }}
-                        </span>
-                    </div>
-                </div>
-                <div v-if="roomList.length == 0" class="no-data">
-                    <span>無資料</span>
-                </div>
-            </div>
-            <div v-if="currentSection === 'friends'" class="content-section">
-                <div v-for="(room, index) in roomList" :key="room.Id" v-on:click="selectChatRoom(index)" :class="['content-chatroom', { 'selected-room': selectRoom === room , 'room-hidden': !isMatch(room, searchContent)}]">
-                    <div class="content-roomname">
-                        <span class="roomname-title">{{ room.latestMessage.senderName }}</span>
-                        <small v-if="room.latestMessage" class="roomname-latestTime">{{ formatDateTime(room.latestMessage.sentAt,2) }}</small>
-                    </div>
-                    <div class="content-latestMessage">
-                        <span v-if="room.latestMessage">
-                            {{ room.latestMessage.senderName }} : {{ latestMessageCountReplacer(room.latestMessage.content) }}
-                        </span>
-                    </div>
-                </div>
-                <div v-if="roomList.length == 0" class="no-data">
-                    <span>無資料</span>
-                </div>
-            </div>
-            <div v-if="currentSection === 'groups'" class="content-section">
-                <div v-for="(room, index) in roomList" :key="room.Id" v-on:click="selectChatRoom(index)" :class="['content-chatroom', { 'selected-room': selectRoom === room , 'room-hidden': !isMatch(room, searchContent) }]">
-                    <div class="content-roomname">
-                        <span class="roomname-title">{{ room.roomname }}({{ room.participants.length }})</span>
-                        <small v-if="room.latestMessage" class="roomname-latestTime">{{ formatDateTime(room.latestMessage.sentAt,2) }}</small>
-                    </div>
-                    <div class="content-latestMessage">
-                        <span v-if="room.latestMessage">
-                            {{ room.latestMessage.senderName }} : {{ latestMessageCountReplacer(room.latestMessage.content) }}
-                        </span>
+                    <div class="content-container">
+                        <div class="content-roomname">
+                            <span v-if="room.roomType == 1" class="roomname-title">{{ room.roomname }}({{ room.participants.length }})</span>
+                            <span v-else class="roomname-title">{{ room.roomname }}</span>
+                            <small v-if="room.latestMessage && room.latestMessage.sentAt" class="roomname-latestTime">
+                                
+                                {{ formatDateTime(room.latestMessage.sentAt, 2) }}
+                            </small>
+                        </div>
+                        <div class="content-latestMessage">
+                            <span v-if="room.latestMessage && room.latestMessage.content">
+                                {{ room.latestMessage.senderName || '系統' }} : {{ latestMessageCountReplacer(room.latestMessage.content) }}
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div v-if="roomList.length == 0" class="no-data">
@@ -94,6 +73,8 @@
     import GroupManage from './GroupManage.vue';
     import FriendManage from './FriendManage.vue';
     import formatDateTime from "@/utils/dateFormatter";
+    import textchatPlaceholder from '@/assets/textchat.png';
+    import userPlaceholder from '@/assets/user.png';
 
 
     export default {
@@ -138,16 +119,11 @@
                 return "輸入內容";
             });
 
-            const latestMessageCountReplacer = ((message) => {
+            const latestMessageCountReplacer = (message) => {
+                if (!message) return "（無訊息）"; // 🔥 如果 message 是 undefined，顯示預設訊息
                 const limit = 25;
-                if(message.length > limit)
-                {
-                    message = message.slice(0,limit+1);
-                    message += '...';
-                }
-
-                return message
-            });
+                return message.length > limit ? message.slice(0, limit) + "..." : message;
+            };
 
             const selectRoom = ref(null);
             const selectChatRoom = (index) =>{
@@ -156,7 +132,10 @@
                 selectRoom.value = select;
             }
 
+
             return{
+                userPlaceholder,
+                textchatPlaceholder,
                 formatDateTime,
                 selectChatRoom,
                 selectRoom,
@@ -185,8 +164,8 @@
         align-items: center; /* 垂直居中 */
         justify-content: center; /* 水平居中 */
         background-color: #f0f0f0;
-        height: 60px; /* 可根据需要调整 */
-        line-height: 60px; /* 水平居中对齐 */
+        height: 60px; 
+        line-height: 60px; /* 水平居中對齊 */
         color: #13213b;
         border-bottom: rgb(209, 209, 209) 1px solid;
         box-sizing: border-box;
@@ -215,17 +194,26 @@
     .content-chatroom{
         padding: 20px;
         overflow-y: auto;
-        .content-roomname{
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
+        display: flex;
 
-            .roomname-title{
-                font-weight: bold;
-            }
+        .content-avatar{
+            padding-right: 10px;
+        }
 
-            .roomname-latestTime{
-                color:#8b8b8b;
+        .content-container {
+            flex: 1;
+            .content-roomname{
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 5px;
+
+                .roomname-title{
+                    font-weight: bold;
+                }
+
+                .roomname-latestTime{
+                    color:#8b8b8b;
+                }
             }
         }
     }

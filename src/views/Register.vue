@@ -7,231 +7,175 @@
       </div>
       <div class="register-header">
         <div>
-          <el-icon class="icon-button">
-              <Promotion />
-          </el-icon>
+          <el-icon class="icon-button"><Promotion /></el-icon>
           <span>聊天作品</span>
         </div>
         <div>
           <h3>註冊</h3>
         </div>
       </div>
+
       <div class="register-body" v-loading="loading" element-loading-text="註冊中，請稍候...">
         <div class="step-bar">
           <el-steps style="max-width: 600px" :active="active" finish-status="success">
-              <el-step title="Step 1" />
-              <el-step title="Step 2" />
-              <el-step title="Step 3" />
+            <el-step title="Step 1" />
+            <el-step title="Step 2" />
+            <el-step title="Step 3" />
           </el-steps>
         </div>
-        <div class="register-input">
+
+        <el-form ref="registerForm" :model="formData" :rules="rules" label-width="100px" class="register-input">
           <div v-if="active == 0" class="input-step">
-            <span>
-              <label>輸入名稱</label>
-              <el-input
-                v-model="inputUsername"
-                placeholder="輸入使用者名稱"
-                required
-              />
-            </span>
+            <el-form-item label="使用者名稱" prop="username">
+              <el-input v-model="formData.username" placeholder="輸入使用者名稱" />
+            </el-form-item>
           </div>
+
           <div v-if="active == 1" class="input-step">
-            <span>
-              <label>輸入信箱</label>
-              <el-input
-                v-model="inputEmail"
-                placeholder="輸入信箱"
-                required
-              />
-            </span>
-            <span>
-              <label>輸入手機</label>
-              <el-input
-                v-model="inputPhone"
-                placeholder="輸入手機"
-                required
-              />
-            </span>
+            <el-form-item label="信箱" prop="email">
+              <el-input v-model="formData.email" placeholder="輸入信箱" />
+            </el-form-item>
+            <el-form-item label="手機" prop="phone">
+              <el-input v-model="formData.phone" placeholder="輸入手機" />
+            </el-form-item>
           </div>
+
           <div v-if="active == 2" class="input-step">
-            <span>
-              <label>輸入密碼</label>
-              <el-input
-                v-model="inputPassword"
-                type="password"
-                placeholder="輸入密碼"
-                required
-                show-password
-              />
-            </span>
+            <el-form-item label="密碼" prop="password">
+              <el-input v-model="formData.password" type="password" placeholder="輸入密碼" show-password />
+            </el-form-item>
           </div>
+
           <div v-if="active == 3" class="input-step">
-            <span>
-              <h4>確定要註冊嗎?</h4>
-              <h4>確定後請點擊下一步</h4>
-            </span>
+            <h4>確定要註冊嗎?</h4>
+            <h4>確定後請點擊下一步</h4>
           </div>
-        </div>
+        </el-form>
+
         <div class="register-submit">
-          <el-button v-if="active>0" style="margin-top: 12px" @click="preview">上一步</el-button>
+          <el-button v-if="active > 0" style="margin-top: 12px" @click="preview">上一步</el-button>
           <el-button style="margin-top: 12px" @click="next">下一步</el-button>
         </div>
+
         <div class="register-message">
           <small>開發測試階段，註冊功能暫不設驗證機制</small>
         </div>
       </div>
     </div>
   </div>
-
-
 </template>
 
 <script>
-  import { ref, onMounted } from "vue";
-  import { useRouter } from "vue-router";
-  import { ElMessage } from "element-plus";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import ExceptMessageHandler from "@/utils/fetchExceptHandler";
 
-  export default {
-    name: "register",
-    setup() {
-      const active = ref(0)
-      const inputUsername = ref('');
-      const inputEmail = ref('');
-      const inputPhone = ref('');
-      const inputPassword = ref('');
-      const loading = ref(false);
+export default {
+  name: "register",
+  setup() {
+    const active = ref(0);
+    const loading = ref(false);
+    const registerForm = ref(null);
 
-      const router = useRouter();
+    const formData = ref({
+      username: "",
+      email: "",
+      phone: "",
+      password: "",
+    });
 
-      const preview = () => {
-        if(active.value-- > 1) active.value -1;
+    // 驗證規則
+    const rules = {
+      username: [
+        { required: true, message: "請輸入使用者名稱", trigger: "blur" },
+        { 
+          pattern: /^[a-zA-Z0-9_.]+$/, 
+          message: "使用者名稱只能包含英文、數字、底線 (_) 和句號 (.)", 
+          trigger: ["blur", "change"]
+        },
+      ],
+      email: [
+        { required: true, message: "請輸入信箱", trigger: "blur" },
+        { type: "email", message: "請輸入正確的信箱格式", trigger: ["blur"] },
+      ],
+      phone: [
+        { required: true, message: "請輸入手機", trigger: "blur" },
+        { pattern: /^[0-9]{10}$/, message: "手機號碼須為 10 位數字", trigger: "blur" },
+      ],
+      password: [
+        { required: true, message: "請輸入密碼", trigger: "blur" },
+        { min: 3, message: "密碼長度至少 3 個字元", trigger: "blur" },
+      ],
+    };
+
+    const router = useRouter();
+
+    const preview = () => {
+      if (active.value > 0) active.value--;
+    };
+
+    const next = async () => {
+      if (active.value < 3) {
+        registerForm.value.validate((valid) => {
+          if (valid) {
+            active.value++;
+          } else {
+            ElMessage.error("請修正錯誤後再繼續");
+          }
+        });
+      } else {
+        await registerUser();
       }
-      const next = async () => {
+    };
 
-        if(active.value == 0)
+    const registerUser = async () => {
+      try {
+        loading.value = true;
+        const url = import.meta.env.VITE_API_URL + "auth/register";
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(        {
+            Username: formData.value.username,
+            ShowUsername: formData.value.username,
+            Email: formData.value.email,
+            Phone: formData.value.phone,
+            Password: formData.value.password,
+          }),
+        });
+
+        let data = await response.json();
+        if(data.errors===null)
         {
-          if(inputUsername.value.trim() == ''){
-            ElMessage.error('使用者名稱不可為空');
-            return;
-          }
+          ElMessage.success(data.data);
+          router.push('/login');
         }
-
-        if (active.value == 1)
+        else
         {
-          let checkStatus = await checkUserAuth();
-          if(!checkStatus){
-            return;
-          }
+            ExceptMessageHandler(data.errors);
+            active.value = 0;
         }
-
-        if (active.value++ > 2){
-          if(inputPassword.value.trim() == '')
-          {
-            ElMessage.error('密碼不可為空');
-            return;
-          }
-
-          active.value = 0
-          await UserCreate()
-        }
+        
+      } catch (error) {
+        ElMessage.error(error);
+        console.error(error);
+      } finally {
+        loading.value = false;
       }
+    };
 
-
-      const checkUserAuth = async () => {
-        try {
-
-          if(inputEmail.value.trim() == '' || inputPhone.value.trim() == '')
-          {
-            ElMessage.error('手機或信箱不可為空');
-            return;
-          }
-          const baseUrl = import.meta.env.VITE_API_URL + "user";
-          // 檢查 email
-          let url = new URL(baseUrl);
-          url.searchParams.append("query", inputEmail.value);
-
-          let response = await fetch(url, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          });
-          let data = await response.json();
-          if(data.length>0)
-          {
-            ElMessage.error('信箱已被使用');
-            return false;
-          }
-
-          // 檢查 phone（重置 URL）
-          data = null;
-          url = new URL(baseUrl);
-          url.searchParams.append("query", inputPhone.value);
-
-          response = await fetch(url, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          });
-          data = await response.json();
-          if(data.length>0)
-          {
-            ElMessage.error('手機已被使用');
-            return false;
-          }
-
-          return true;
-
-        } catch (error) {
-          console.log(error);
-        }
-      };
-
-      const UserCreate = async () =>{
-        try{
-          loading.value = true;
-          const url = import.meta.env.VITE_API_URL + "user"
-          const response = await fetch(url, {
-              method: "POST",
-              headers: {
-              "Content-Type": "application/json", 
-              },
-              body:JSON.stringify({
-                  "Username": inputUsername.value,
-                  "Email": inputEmail.value,
-                  "Phone": inputPhone.value,
-                  "Password": inputPassword.value
-              })
-              
-          });
-          ElMessage.success("註冊成功！");
-
-          //跳轉至主頁
-          router.push("/");
-
-        }catch(error)
-        {
-            ElMessage.error("註冊失敗，請稍後再試");
-            console.log(error)
-        }
-        finally {
-          loading.value = false; // 關閉 Loading
-        }
-      }
-
-      return {
-        inputUsername,
-        inputEmail,
-        inputPhone,
-        inputPassword,
-        active,
-        next,
-        preview,
-        loading,
-      };
-    },
-  };
+    return {
+      registerForm,
+      formData,
+      rules,
+      active,
+      next,
+      preview,
+      loading,
+    };
+  },
+};
 </script>
 
 
@@ -314,7 +258,7 @@
         justify-content: center;
         gap: 15px;
 
-        .input-step span{
+        .input-step{
           padding: 10px;
         }
       }

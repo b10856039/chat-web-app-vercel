@@ -26,15 +26,23 @@
                 <h4>已加入的群組</h4>
             </div>
             <div class="container-body join">
+                <div v-if="hasjoinRoomList.length === 0" class="no-data">無</div>
+                <div v-else-if="filteredHasjoinRoomList.length === 0" class="no-data">未找到匹配的群組</div>
                 <div v-for="(room,index) in hasjoinRoomList" :key="room.id" :class="['group-data', {'room-hidden': !isMatch(room, searchContent)}]">
-                    <div class="group-roomname">
-                        <span>{{ room.roomname }}</span>
+                    <div class="group-content">
+                        <div class="group-avatar">
+                            <el-avatar v-if="room.photoImg" :size="50" :src="room.photoImg"/>
+                            <el-avatar v-else :src="textPlaceholder" :size="50"></el-avatar>
+                        </div>
+                        <div class="group-roomname">
+                            <span>{{ room.roomname }}</span>
+                        </div>
                     </div>
                     <div class="group-option">
                         <DropDown title="選項">
                             <template #content>
                                 <el-dropdown-menu >
-                                    <el-dropdown-item v-if="checkUserRole(room)" v-on:click="showEditGroup = true;processRoomId = room.id" icon="edit">編輯</el-dropdown-item>
+                                    <el-dropdown-item v-if="checkUserRole(room)" v-on:click="showEditGroup = true;processRoomId = room.id;EditRoomName = room.roomname;EditAvatar = room.photoImg" icon="edit">編輯</el-dropdown-item>
                                     <el-dropdown-item v-if="!checkUserRole(room)" v-on:click="showLeaveGroup = true;processRoomId = room.id" icon="close">退出</el-dropdown-item>
                                     <el-dropdown-item v-if="checkUserRole(room)" v-on:click="showDeleteGroup = true;processRoomId = room.id" icon="delete">刪除</el-dropdown-item>
                                 </el-dropdown-menu>
@@ -49,12 +57,14 @@
                 <h4>可加入的群組</h4>
             </div>
             <div class="container-body unjoin">
+                <div v-if="unjoinRoomList.length === 0" class="no-data">無</div>
+                <div v-else-if="filteredUnjoinRoomList.length === 0" class="no-data">未找到匹配的群組</div>
                 <div v-for="(room,index) in unjoinRoomList" :key="room.Id" :class="['group-data', {'room-hidden': !isMatch(room, searchContent)}]">
                     <div class="group-roomname">
                         <span>{{ room.roomname }}</span>
                     </div>
                     <div class="group-option">
-                        <el-icon v-on:click="showJoinGroup = true;processRoomId = room.id"><Plus /></el-icon>
+                        <el-icon class="clickable-icon"  v-on:click="showJoinGroup = true;processRoomId = room.id"><Plus /></el-icon>
                     </div>
                 </div>
             </div>
@@ -64,8 +74,12 @@
     <custom-dialog
         v-model="showAddGroup"
         title="建立群組"
+        :beforeClose="function(){showAddGroup = false;AddRoomName = ''}"
     >
         <template #content>
+
+            <AvatarUploader :defaultImgUrl="defaultImgUrl" @AvatarUpdate="handleAvatarAdd"></AvatarUploader>
+
             <input type="text" placeholder="輸入群組名稱" v-model="AddRoomName">
         </template>
         <template #footer>
@@ -79,6 +93,7 @@
         title="編輯群組"
     >
         <template #content>
+            <AvatarUploader :defaultImgUrl="defaultImgUrl" :photoImg="EditAvatar" @AvatarUpdate="handleAvatarUpdate"></AvatarUploader>
             <input type="text" placeholder="群組名稱" v-model="EditRoomName">
         </template>
         <template #footer>
@@ -130,12 +145,18 @@
 <script>
     import CustomDialog from "@/components/Dialog.vue";
     import DropDown from "@/components/DropDown.vue";
+    import AvatarUploader from './AvatarUploader.vue';
     import { ref, onMounted, watch, computed,inject } from 'vue';
+    import { ElMessage } from "element-plus";
+    import getImageType from "@/utils/imageHandle";
+    import textPlaceholder from "@/assets/textchat.png";
+    import ExceptMessageHandler from "@/utils/fetchExceptHandler";
 
     export default{
         components:{
             CustomDialog,
-            DropDown
+            DropDown,
+            AvatarUploader
         },
         props:{
             user : Object
@@ -156,6 +177,9 @@
             const hasjoinRoomList = ref([]);
             const unjoinRoomList = ref([]);
 
+
+            const defaultImgUrl = ref("src/assets/textchat.png");
+
             const isMatch = (room, search) => {
                 if (!search) return true;
                 const lowerSearch = search.toLowerCase();
@@ -168,6 +192,14 @@
                     return room.roomname.toLowerCase().includes(lowerSearch);
                 }
             };
+
+            const filteredHasjoinRoomList = computed(() => {
+                return hasjoinRoomList.value.filter(room => isMatch(room, searchContent.value));
+            });
+
+            const filteredUnjoinRoomList = computed(() => {
+                return unjoinRoomList.value.filter(room => isMatch(room, searchContent.value));
+            });
 
 
             const getRoomList = async (hasjoin) => {
@@ -187,12 +219,30 @@
                             "Authorization": `Bearer ${localStorage.getItem('token')}`
                         }
                     });
-                    const data = await response.json();
+                    let data = await response.json();
 
-                    if(hasjoin){
-                        hasjoinRoomList.value = data;
-                    }else{
-                        unjoinRoomList.value = data;
+                    if(data.errors===null)
+                    {
+                        data = data.data.map( (room) => {
+                            if (room.photoImg.length > 0) {
+                            const imagetype = getImageType(room.photoImg);
+                            room.photoImg = imagetype ? `data:${imagetype};base64,${room.photoImg}` : ""
+                                return room;
+                                } else {
+                                room.photoImg = ""
+                                return room;
+                            }
+                        })
+
+                        if(hasjoin){
+                            hasjoinRoomList.value = data;
+                        }else{
+                            unjoinRoomList.value = data;
+                        }
+                    }
+                    else
+                    {
+                        ExceptMessageHandler(data.errors);
                     }
                     
                 }
@@ -209,10 +259,29 @@
 
             });
 
-
             const AddRoomName = ref('');
+            const AddRoomAvatar = ref(null);
+            const handleAvatarAdd = (value) => {
+                AddRoomAvatar.value = value
+            }
+
             const handleAddGroupConfirm = async ()=>{
                 try{
+
+                    if(AddRoomName.value == ""){
+                        ElMessage.warning('名稱不可為空');
+                    }
+
+                    const newData = {
+                        "Roomname": AddRoomName.value,
+                        "CreatedByUserId":props.user.userId,
+                        "RoomType":1
+                    }
+
+                    if(AddRoomAvatar.value!= null){
+                        newData.PhotoImg = AddRoomAvatar.value;
+                    }
+
                     const url = new URL( import.meta.env.VITE_API_URL + "chatroom");
                     const response = await fetch(url, {
                         method: "POST",
@@ -220,19 +289,24 @@
                         "Content-Type": "application/json", 
                         "Authorization": `Bearer ${localStorage.getItem('token')}`
                         },
-                        body:JSON.stringify({
-                            "Roomname": AddRoomName.value,
-                            "CreatedByUserId":props.user.userId,
-                            "RoomType":1
-                        })
+                        body:JSON.stringify(newData)
                     });
                     const data = await response.json();
 
-                    showAddGroup.value = false;
-                    AddRoomName.value = "";
+                    if(data.errors===null)
+                    {
+                        ElMessage.success(data.data)
+                        showAddGroup.value = false;
+                        AddRoomName.value = "";
+                        AddRoomAvatar.value = null;
 
-                    await getRoomList(false);
-                    await getRoomList(true);
+                        await getRoomList(false);
+                        await getRoomList(true);
+                    }
+                    else
+                    {
+                        ExceptMessageHandler(data.errors);
+                    }
 
                 }catch(error)
                 {
@@ -241,8 +315,27 @@
             }
 
             const EditRoomName = ref("");
+            const EditRoomAvatar = ref(null);
+            const handleAvatarUpdate = (value) => {
+                EditRoomAvatar.value = value
+            }
             const handleEditGroupConfirm = async ()=>{
                 try{
+
+                    if(EditRoomName.value == ""){
+                        ElMessage.warning('名稱不可為空');
+                        return
+                    }
+                
+                    const newData = {
+                        "Roomname": EditRoomName.value,
+                        "UserId" : props.user.userId
+                    }
+
+                    if(EditRoomName.value!= null){
+                        newData.PhotoImg = EditRoomAvatar.value;
+                    }
+
                     const url = new URL(import.meta.env.VITE_API_URL + "chatroom/" + processRoomId.value);
                     // const url = "http://localhost:5266/api/chatroom/" + processRoomId.value
                     const response = await fetch(url, {
@@ -251,19 +344,26 @@
                         "Content-Type": "application/json", 
                         "Authorization": `Bearer ${localStorage.getItem('token')}`
                         },
-                        body:JSON.stringify({
-                            "Roomname": EditRoomName.value,
-                        })
+                        body:JSON.stringify(newData)
                     });
                     const data = await response.json();
-
                     
-                    showEditGroup.value = false;
-                    EditRoomName.value = "";
-                    processRoomId.value = null;
+                    if(data.errors===null)
+                    {
+                        ElMessage.success(data.data)
+                        showEditGroup.value = false;
+                        EditRoomName.value = "";
+                        processRoomId.value = null;
 
-                    await getRoomList(false);
-                    await getRoomList(true);
+                        await getRoomList(false);
+                        await getRoomList(true);
+                    }
+                    else
+                    {
+                        console.log(data.errors)
+                        ExceptMessageHandler(data.errors);
+                    }
+
 
                 }catch(error)
                 {
@@ -274,6 +374,7 @@
             const handleDeleteGroupConfirm = async ()=>{
                 try{
                     const url = new URL( import.meta.env.VITE_API_URL + "chatroom/" + processRoomId.value);
+                    url.searchParams.append('userId',props.user.userId);
                     // const url = "http://localhost:5266/api/chatroom/" + processRoomId.value
 
                     const response = await fetch(url, {
@@ -285,12 +386,22 @@
                     });
                     const data = await response.json();
 
+                    if(data.errors===null)
+                    {
+                        ElMessage.success(data.data)
+                        showDeleteGroup.value = false;
+                        processRoomId.value = null;
 
-                    showDeleteGroup.value = false;
-                    processRoomId.value = null;
+                        await getRoomList(false);
+                        await getRoomList(true);
+                    }
+                    else
+                    {
+                        ExceptMessageHandler(data.errors);
+                    }
 
-                    await getRoomList(false);
-                    await getRoomList(true);
+
+
 
                 }catch(error)
                 {
@@ -314,11 +425,20 @@
                     });
                     const data = await response.json();
 
-                    showJoinGroup.value = false;
-                    processRoomId.value = null;
+                    if(data.errors===null)
+                    {
+                        ElMessage.success(data.data)
+                        showJoinGroup.value = false;
+                        processRoomId.value = null;
 
-                    await getRoomList(false);
-                    await getRoomList(true);
+                        await getRoomList(false);
+                        await getRoomList(true);
+                    }
+                    else
+                    {
+                        ExceptMessageHandler(data.errors);
+                    }
+
                 }catch(error)
                 {
                     console.log(error)
@@ -340,13 +460,20 @@
                         })                
                     });
                     const data = await response.json();
-                    console.log(data)
+                    if(data.errors===null)
+                    {
+                        ElMessage.success(data.data)
+                        showLeaveGroup.value = false;
+                        processRoomId.value = null;
 
-                    showLeaveGroup.value = false;
-                    processRoomId.value = null;
+                        await getRoomList(false);
+                        await getRoomList(true);
+                    }
+                    else
+                    {
+                        ExceptMessageHandler(data.errors);
+                    }
 
-                    await getRoomList(false);
-                    await getRoomList(true);
 
                 }catch(error)
                 {
@@ -388,7 +515,13 @@
                 handleJoinGroupConfirm,
                 handleExitGroupConfirm,
 
-                isMatch
+                isMatch,
+                filteredHasjoinRoomList,
+                filteredUnjoinRoomList,
+                defaultImgUrl,
+                handleAvatarAdd,
+                handleAvatarUpdate,
+                textPlaceholder
             }
         }
     }
@@ -440,14 +573,22 @@
         }
 
         .group-data {
-            padding: 20px;
+            padding: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
 
-            .group-roomname{
-                font-size: 18px;
+            .group-content{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                .group-roomname{
+                    font-size: 18px;
+                }
             }
+
+
 
             .group-option {
                 display: flex;
@@ -463,6 +604,16 @@
 
     .room-hidden {
          display: none !important;
+    }
+
+    .clickable-icon {
+        cursor: pointer;
+    }
+
+    .no-data{
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
 </style> 

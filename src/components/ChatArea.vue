@@ -50,7 +50,7 @@
                     type="textarea"
                     placeholder="請輸入訊息"
                     resize="none"
-                    @keypress.enter="sendMessage"
+                    @keydown.enter="sendMessage"
                     v-loading="loading"
                 />
                 <button @click="sendMessage">
@@ -65,15 +65,18 @@
 </template>
 
 <script>
+    import { ElMessage } from 'element-plus';
     import {ref,onMounted, onUnmounted,watch, inject} from 'vue'
     import * as signalR from '@microsoft/signalr';
     import formatDateTime from "@/utils/dateFormatter";
+    import ExceptMessageHandler from "@/utils/fetchExceptHandler";
 
     export default {
         props:{
             user : Object,
             currentChat : Object,
         },
+        emits:['MessageUpdate'],
         setup(props,{emit})
         {
             const newMessage = ref('');
@@ -104,10 +107,20 @@
                 });
 
                 const data = await response.json();
-                messages.value = data.map((message) => ({
-                    ...message,
-                    isMine: message.senderId === props.user.userId, // 根據 senderId 判斷
-                }));
+                if(data.errors===null)
+                {
+                    messages.value = data.data.map((message) => ({
+                        ...message,
+                        isMine: message.senderId === props.user.userId, // 根據 senderId 判斷
+                    }));
+                }
+                else
+                {
+                    ExceptMessageHandler(data.errors);
+                }
+
+
+
                 }
                 catch(error)
                 {
@@ -122,8 +135,9 @@
                     try {
                         // 發送訊息到 SignalR Hub
                         await connection.value.invoke('SendMessage', props.currentChat.id, props.user.userId, newMessage.value);
-                        newMessage.value = "";  // 清空輸入框
                         loading.value = false;
+                        emit('MessageUpdate', true);
+                        newMessage.value = "";  // 清空輸入框
                     } catch (err) {
                         console.error("Error sending message: ", err);
                         // 如果有錯誤，顯示錯誤消息
@@ -183,7 +197,6 @@
 
             // 監聽 props.currentChat 的變化
             watch(() => props.currentChat, async (newChat, oldChat) => {
-                console.log(newChat)
                 if (newChat !== null) {
                     if (connection.value) {
                         // 離開舊的聊天室
