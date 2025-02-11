@@ -325,7 +325,7 @@ export default {
                     })
                 });
 
-                const result = await response.json();
+                const data = await response.json();
 
                 if(data.errors===null)
                 {
