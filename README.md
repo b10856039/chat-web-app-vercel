@@ -4,7 +4,7 @@
 
 [多人聊天應用](https://chat-web-app-vercel.vercel.app/ "link")
 
-[後端伺服器Github](https://github.com/b10856039/chat-web-app-backend-render/ link)
+[後端伺服器Github](https://github.com/b10856039/chat-web-app-backend-render/ "link")
 
 ## 開發規格與環境說明
 
