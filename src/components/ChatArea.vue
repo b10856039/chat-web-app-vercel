@@ -218,6 +218,8 @@
                                 ...message,
                                 isMine: message.senderId === props.user.userId, 
                             });
+
+                            emit('MessageUpdate', true);
                         });
 
                         // **清空舊的訊息**
@@ -237,6 +239,8 @@
                             ...message,
                             isMine: message.senderId === newUser.userId, 
                         });
+
+                        emit('MessageUpdate', true);
                     });
 
                     // **清空舊的訊息**
