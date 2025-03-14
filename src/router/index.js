@@ -63,6 +63,7 @@ router.beforeEach(async (to, from, next) => {
 
     // 向後端驗證 token
     const isServerValid = await validateTokenWithServer(token);
+    console.log(isServerValid)
     if (!isServerValid) {
       console.log('驗證沒過')
       localStorage.removeItem('token');
