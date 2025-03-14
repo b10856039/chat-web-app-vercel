@@ -37,17 +37,38 @@ function isTokenValid(token) {
   }
 }
 
-// 路由前置處理
-router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
-  const isAuthenticated = isTokenValid(token);
-
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    localStorage.removeItem('token'); // 清除過期 token
-    next({ name: 'login' });
-  } else {
-    next();
+// 向後端驗證 token
+async function validateTokenWithServer(token) {
+  try {
+    const response = await axios.get('/api/auth/validate-token', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.status === 200;
+  } catch (error) {
+    return false;
   }
+}
+
+// 路由前置處理
+router.beforeEach(async (to, from, next) => {
+  const token = localStorage.getItem('token');
+
+  if (to.meta.requiresAuth) {
+    if (!isTokenValid(token)) {
+      // token 過期或不存在
+      localStorage.removeItem('token');
+      return next({ name: 'login' });
+    }
+
+    // 向後端驗證 token
+    const isServerValid = await validateTokenWithServer(token);
+    if (!isServerValid) {
+      localStorage.removeItem('token');
+      return next({ name: 'login' });
+    }
+  }
+
+  next();
 });
 
 export default router
