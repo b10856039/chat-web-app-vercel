@@ -40,7 +40,7 @@ function isTokenValid(token) {
 // 向後端驗證 token
 async function validateTokenWithServer(token) {
   try {
-    const response = await axios.get('/api/auth/validate-token', {
+    const response = await axios.get(import.meta.env.VITE_API_URL + 'auth/validate-token', {
       headers: { Authorization: `Bearer ${token}` }
     });
     return response.status === 200;
@@ -52,11 +52,9 @@ async function validateTokenWithServer(token) {
 // 路由前置處理
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('token');
-  console.log(token)
   if (to.meta.requiresAuth) {
     if (!isTokenValid(token)) {
       // token 過期或不存在
-      console.log('過期')
       localStorage.removeItem('token');
       return next({ name: 'login' });
     }
@@ -65,7 +63,6 @@ router.beforeEach(async (to, from, next) => {
     const isServerValid = await validateTokenWithServer(token);
     console.log(isServerValid)
     if (!isServerValid) {
-      console.log('驗證沒過')
       localStorage.removeItem('token');
       return next({ name: 'login' });
     }
