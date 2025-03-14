@@ -107,8 +107,9 @@
                 Password: formData.value.password,
               }),
             });
-            console.log(response)
+            
             const data = await response.json();
+            console.log(data)
             if(data.errors===null)
             {
               localStorage.setItem("token", data.data.token);
