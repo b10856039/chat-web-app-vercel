@@ -52,7 +52,7 @@ async function validateTokenWithServer(token) {
 // 路由前置處理
 router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('token');
-
+  console.log(token)
   if (to.meta.requiresAuth) {
     if (!isTokenValid(token)) {
       // token 過期或不存在
