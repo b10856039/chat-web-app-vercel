@@ -107,7 +107,7 @@
                 Password: formData.value.password,
               }),
             });
-
+            console.log(response)
             const data = await response.json();
             if(data.errors===null)
             {
