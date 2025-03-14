@@ -43,6 +43,7 @@ async function validateTokenWithServer(token) {
     const response = await axios.get(import.meta.env.VITE_API_URL + 'auth/validate-token', {
       headers: { Authorization: `Bearer ${token}` }
     });
+    console.log('驗證')
     console.log(response)
     return response.status === 200;
   } catch (error) {
