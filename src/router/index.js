@@ -46,12 +46,10 @@ async function validateTokenWithServer(token) {
       method: "GET",
       headers: {
       "Content-Type": "application/json", 
-      "Authorization": `Bearer ${localStorage.getItem('token')}`
+      "Authorization": `Bearer ${token}`
       }
   });
 
-    console.log('驗證')
-    console.log(response)
     return response.status === 200;
   } catch (error) {
     return false;
@@ -70,7 +68,6 @@ router.beforeEach(async (to, from, next) => {
 
     // 向後端驗證 token
     const isServerValid = await validateTokenWithServer(token);
-    console.log(isServerValid)
     if (!isServerValid) {
       localStorage.removeItem('token');
       return next({ name: 'login' });
