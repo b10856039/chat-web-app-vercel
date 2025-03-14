@@ -46,6 +46,10 @@
             <el-button type="primary" @click="handleLogin">登入</el-button>
           </div>
         </el-form>
+        <div class="test-account">
+            <small>測試帳號: test@gmail.com</small>
+            <small>測試密碼: test</small>
+        </div>
       </div>
     </div>
   </div>
@@ -268,6 +272,11 @@
         }
       }
     }
+  }
+
+  .test-account{
+    display: flex;
+    flex-direction: column;
   }
 
   /* ==========================
