@@ -40,9 +40,16 @@ function isTokenValid(token) {
 // 向後端驗證 token
 async function validateTokenWithServer(token) {
   try {
-    const response = await axios.get(import.meta.env.VITE_API_URL + 'auth/validate-token', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+
+    const url = new URL(import.meta.env.VITE_API_URL + "auth/validate-token");
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+      "Content-Type": "application/json", 
+      "Authorization": `Bearer ${localStorage.getItem('token')}`
+      }
+  });
+
     console.log('驗證')
     console.log(response)
     return response.status === 200;
