@@ -56,6 +56,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
     if (!isTokenValid(token)) {
       // token 過期或不存在
+      console.log('過期')
       localStorage.removeItem('token');
       return next({ name: 'login' });
     }
@@ -63,6 +64,7 @@ router.beforeEach(async (to, from, next) => {
     // 向後端驗證 token
     const isServerValid = await validateTokenWithServer(token);
     if (!isServerValid) {
+      console.log('驗證沒過')
       localStorage.removeItem('token');
       return next({ name: 'login' });
     }
