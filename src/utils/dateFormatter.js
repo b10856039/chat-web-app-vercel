@@ -1,18 +1,11 @@
 export default function formatDateTime(inputDate, option = 2) {
-  // 先將日期字符串轉換為 Date 物件，並確保它是 UTC 時間
+  // 先解析成 Date 物件 (JS 內部會自動處理 UTC 時間)
   const date = new Date(inputDate);
-  
-  // 確保這個時間是 UTC 時間，並將它轉換為台北時區 (UTC +8)
-  const taipeiOffset = 8 * 60; // 台北時區的偏移量，單位是分鐘
 
-  // 取得 UTC 時間的時間戳（以毫秒為單位），並加上 8 小時
-  const utcTime = date.getTime() + taipeiOffset * 60 * 1000;
-
-  // 轉換回新的日期物件，這個日期就是台北時間 (UTC+8)
-  const taipeiDate = new Date(utcTime);
+  // 正確轉換為台北時間 (Asia/Taipei)
+  const taipeiDate = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Taipei" }));
 
   const now = new Date();
-
   const isToday = (d1, d2) =>
     d1.getFullYear() === d2.getFullYear() &&
     d1.getMonth() === d2.getMonth() &&
@@ -33,9 +26,6 @@ export default function formatDateTime(inputDate, option = 2) {
     const minutes = date.getMinutes().toString().padStart(2, "0");
     const period = hours < 12 ? "上午" : "下午";
     let formattedHours = hours % 12 || 12; // 12 小時制
-    if (period === "上午" && formattedHours === 12) {
-      formattedHours = 12;
-    }
     return `${period} ${formattedHours}:${minutes}`;
   };
 
@@ -49,33 +39,30 @@ export default function formatDateTime(inputDate, option = 2) {
   const isSameYear = taipeiDate.getFullYear() === now.getFullYear();
 
   if (option === 1) {
-    // 僅顯示時間，上午/下午 hh:mm
     return formatTime(taipeiDate);
   }
 
   if (option === 2) {
-    // 根據日期顯示邏輯
     if (isToday(taipeiDate, now)) {
-      return formatTime(taipeiDate); // 如果是今天，顯示時間
+      return formatTime(taipeiDate);
     } else if (isYesterday(taipeiDate, now)) {
-      return "昨天"; // 如果是昨天，顯示昨天
+      return "昨天";
     } else if (!isSameYear) {
-      return `${taipeiDate.getFullYear()}-${formatDate(taipeiDate)}`; // 如果不是同一年，顯示年份和日期
+      return `${taipeiDate.getFullYear()}-${formatDate(taipeiDate)}`;
     } else {
-      return formatDate(taipeiDate); // 其他情況，僅顯示日期
+      return formatDate(taipeiDate);
     }
   }
 
   if (option === 3) {
-    // 根據日期顯示邏輯
     if (isToday(taipeiDate, now)) {
-      return "今天"; // 如果是今天，顯示今天
+      return "今天";
     } else if (isYesterday(taipeiDate, now)) {
-      return "昨天"; // 如果是昨天，顯示昨天
+      return "昨天";
     } else if (!isSameYear) {
-      return `${taipeiDate.getFullYear()}-${formatDate(taipeiDate)}`; // 如果不是同一年，顯示年份和日期
+      return `${taipeiDate.getFullYear()}-${formatDate(taipeiDate)}`;
     } else {
-      return formatDate(taipeiDate); // 其他情況，僅顯示日期
+      return formatDate(taipeiDate);
     }
   }
 
