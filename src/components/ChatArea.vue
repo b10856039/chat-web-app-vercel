@@ -113,7 +113,6 @@
                         ...message,
                         isMine: message.senderId === props.user.userId, // 根據 senderId 判斷
                     }));
-                    console.log(messages.value)
                 }
                 else
                 {
