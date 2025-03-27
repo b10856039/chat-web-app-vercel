@@ -43,6 +43,7 @@
                                 {{ room.latestMessage.senderName || '系統' }} : {{ latestMessageCountReplacer(room.latestMessage.content) }}
                             </span>
                         </div>
+                        {{ room }}
                     </div>
                 </div>
                 <div v-if="roomList.length == 0" class="no-data">

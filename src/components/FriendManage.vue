@@ -113,6 +113,7 @@
                 <div v-for="user in addFriendSearchList" :key="user.id" class="friend-data">
                     <div class="friend-content">
                         <div class="friend-avatar">
+                            {{ user.photoImg }}
                             <el-avatar v-if="user.photoImg" :size="50" :src="user.photoImg"/>
                             <el-avatar v-else :src="userPlaceholder" :size="50"></el-avatar>
                         </div>
