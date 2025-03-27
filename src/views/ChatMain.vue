@@ -149,15 +149,16 @@
 
                   if(data.errors===null)
                   {
-                    console.log('*******');
                     roomList.value[index].latestMessage = await data.data[0]; // 存儲最新訊息
-                    console.log('*******');
                   }
                   else
                   {
                       ExceptMessageHandler(data.errors);
                   }
               }
+              console.log('*****')
+              console.log(roomList.value)
+              console.log('*****')
               // 排序聊天室列表，將有最新訊息的排前面
               roomList.value.sort((a, b) => {
                   if (!a.latestMessage) return 1; // 沒有訊息的排後面
