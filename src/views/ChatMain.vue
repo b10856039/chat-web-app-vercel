@@ -132,50 +132,57 @@
        * 取得最新的聊天室訊息
        */
        const getLatestMessages = async () => {
-          try {
-              console.log('------')
-              console.log(roomList.value)
-              console.log('------')
-              for (const index in roomList.value) {
-                  const url = new URL(import.meta.env.VITE_API_URL + "message");
-                  url.searchParams.append('userId', user.value.userId);
-                  url.searchParams.append('chatroomId', roomList.value[index].id);
-                  url.searchParams.append('latestOne', true);
+        try {
+            console.log('------');
+            console.log(roomList.value);
+            console.log('------');
 
-                  const response = await fetch(url, {
-                      method: "GET",
-                      headers: {
-                          "Authorization": `Bearer ${localStorage.getItem('token')}`
-                      }
-                  });
+            // 使用 Promise.all 來等所有非同步請求完成後再執行排序
+            const updateMessages = roomList.value.map(async (room, index) => {
+                const url = new URL(import.meta.env.VITE_API_URL + "message");
+                url.searchParams.append('userId', user.value.userId);
+                url.searchParams.append('chatroomId', room.id);
+                url.searchParams.append('latestOne', true);
 
-                  const data = await response.json();
-                  console.log(data)
-                  console.log(roomList.value.Id)
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
 
-                  if(data.errors===null)
-                  {
-                    roomList.value[index].latestMessage = await data.data[0]; // 存儲最新訊息
-                  }
-                  else
-                  {
-                      ExceptMessageHandler(data.errors);
-                  }
-              }
-              console.log('*****')
-              console.log(roomList.value)
-              console.log('*****')
-              // 排序聊天室列表，將有最新訊息的排前面
-              // roomList.value.sort((a, b) => {
-              //     if (!a.latestMessage) return 1; // 沒有訊息的排後面
-              //     if (!b.latestMessage) return -1;
-              //     return new Date(b.latestMessage.sentAt) - new Date(a.latestMessage.sentAt); // 根據最新訊息時間排序
-              // });
-              console.log(roomList.value)
-              console.log("!!!!")
-          } catch (error) {
-              console.error("Error fetching latest messages:", error);
-          }
+                const data = await response.json();
+                console.log(data);
+
+                if (data.errors === null) {
+                    const latestMessage = data.data[0];
+                    if (latestMessage) {
+                        roomList.value[index].latestMessage = latestMessage; // 存儲最新訊息
+                    }
+                } else {
+                    ExceptMessageHandler(data.errors);
+                }
+            });
+
+            // 等待所有請求完成
+            await Promise.all(updateMessages);
+
+            console.log('*****');
+            console.log(roomList.value);
+            console.log('*****');
+
+            // 現在可以安心進行排序了
+            roomList.value.sort((a, b) => {
+                if (!a.latestMessage) return 1; // 沒有訊息的排後面
+                if (!b.latestMessage) return -1;
+                return new Date(b.latestMessage.sentAt) - new Date(a.latestMessage.sentAt); // 根據最新訊息時間排序
+            });
+
+            console.log(roomList.value);
+            console.log("!!!!");
+        } catch (error) {
+            console.error("Error fetching latest messages:", error);
+        }
       };
 
 
