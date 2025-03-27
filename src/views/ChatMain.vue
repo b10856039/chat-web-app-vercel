@@ -138,7 +138,7 @@
             console.log('------');
 
             // 使用 Promise.all 來等所有非同步請求完成後再執行排序
-            const updateMessages = roomList.value.map(async (room, index) => {
+            const updateMessages = roomList.value.map(async (room) => {
                 const url = new URL(import.meta.env.VITE_API_URL + "message");
                 url.searchParams.append('userId', user.value.userId);
                 url.searchParams.append('chatroomId', room.id);
@@ -157,7 +157,11 @@
                 if (data.errors === null) {
                     const latestMessage = data.data[0];
                     if (latestMessage) {
-                        roomList.value[index].latestMessage = latestMessage; // 存儲最新訊息
+                        // 使用 room.id 來正確地找到對應聊天室並更新訊息
+                        const roomToUpdate = roomList.value.find(r => r.id === room.id);
+                        if (roomToUpdate) {
+                            roomToUpdate.latestMessage = latestMessage; // 存儲最新訊息
+                        }
                     }
                 } else {
                     ExceptMessageHandler(data.errors);
