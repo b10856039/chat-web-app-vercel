@@ -22,6 +22,7 @@
                 </el-input>
             </div>
             <div v-if="currentSection === 'all' || currentSection === 'friends' || currentSection === 'groups'" class="content-section">
+                {{ console.log(roomList) }}
                 <div v-for="(room, index) in roomList" :key="room.id" v-on:click="selectChatRoom(index)" :class="['content-chatroom', { 'selected-room': selectRoom!=null && selectRoom.id === room.id , 'room-hidden': !isMatch(room, searchContent) }]">
 
                     <div class="content-avatar">
@@ -43,7 +44,6 @@
                                 {{ room.latestMessage.senderName || '系統' }} : {{ latestMessageCountReplacer(room.latestMessage.content) }}
                             </span>
                         </div>
-                        {{ console.log(room) }}
                     </div>
                 </div>
                 <div v-if="roomList.length == 0" class="no-data">
