@@ -151,6 +151,7 @@
 
                   const data = await response.json();
                   console.log(data)
+                  console.log(roomList.value.Id)
 
                   if(data.errors===null)
                   {
@@ -165,11 +166,11 @@
               console.log(roomList.value)
               console.log('*****')
               // 排序聊天室列表，將有最新訊息的排前面
-              // roomList.value.sort((a, b) => {
-              //     if (!a.latestMessage) return 1; // 沒有訊息的排後面
-              //     if (!b.latestMessage) return -1;
-              //     return new Date(b.latestMessage.sentAt) - new Date(a.latestMessage.sentAt); // 根據最新訊息時間排序
-              // });
+              roomList.value.sort((a, b) => {
+                  if (!a.latestMessage) return 1; // 沒有訊息的排後面
+                  if (!b.latestMessage) return -1;
+                  return new Date(b.latestMessage.sentAt) - new Date(a.latestMessage.sentAt); // 根據最新訊息時間排序
+              });
               console.log(roomList.value)
               console.log("!!!!")
           } catch (error) {
