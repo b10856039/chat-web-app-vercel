@@ -149,9 +149,9 @@
 
                   if(data.errors===null)
                   {
-                    console.log('*******')
-                    roomList.value[index].latestMessage = data.data[0]; // 存儲最新訊息
-                    console.log('*******')
+                    console.log('*******');
+                    roomList.value[index].latestMessage = await data.data[0]; // 存儲最新訊息
+                    console.log('*******');
                   }
                   else
                   {
@@ -164,7 +164,7 @@
                   if (!b.latestMessage) return -1;
                   return new Date(b.latestMessage.sentAt) - new Date(a.latestMessage.sentAt); // 根據最新訊息時間排序
               });
-              console.log(roomList)
+              console.log(roomList.value)
               console.log("!!!!")
           } catch (error) {
               console.error("Error fetching latest messages:", error);
