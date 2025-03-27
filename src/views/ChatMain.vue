@@ -70,7 +70,12 @@
 
       const handleCurrentChatLatestMsg = async () => {
         await getRoomList();
-        await getLatestMessages();
+        if (roomList.value.length > 0) {
+          await getLatestMessages();
+          userReady.value = true;
+        }else{
+          userReady.value = true;
+        }
       };
 
       /**
@@ -145,7 +150,7 @@
                   });
 
                   const data = await response.json();
-
+                  console.log(data)
 
                   if(data.errors===null)
                   {
