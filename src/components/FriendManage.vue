@@ -113,7 +113,6 @@
                 <div v-for="user in addFriendSearchList" :key="user.id" class="friend-data">
                     <div class="friend-content">
                         <div class="friend-avatar">
-                            {{ user.photoImg }}
                             <el-avatar v-if="user.photoImg" :size="50" :src="user.photoImg"/>
                             <el-avatar v-else :src="userPlaceholder" :size="50"></el-avatar>
                         </div>
@@ -214,6 +213,7 @@ export default {
                 {
                     friendList.value = data.data;
                     friendList.value = friendList.value.map( (friend) => {
+
                         if (friend.friendPhotoImg.length > 0) {
                             const imagetype = getImageType(friend.friendPhotoImg);
                             friend.friendPhotoImg = imagetype ? `data:${imagetype};base64,${friend.friendPhotoImg}` : ""
@@ -264,6 +264,16 @@ export default {
                 if(data.errors===null)
                 {
                     addFriendSearchList.value = data.data;
+                    addFriendSearchList.value = addFriendSearchList.value.map( (user) => {
+                        if (user.photoImg.length > 0) {
+                            const imagetype = getImageType(user.photoImg);
+                            user.photoImg = imagetype ? `data:${imagetype};base64,${user.photoImg}` : ""
+                            return user;
+                        } else {
+                            user.photoImg = ""
+                            return user;
+                        }
+                    })
                 }
                 else
                 {
