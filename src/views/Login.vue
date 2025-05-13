@@ -47,8 +47,8 @@
           </div>
 
           <div class="test-account">
-              <small>測試帳號: test@gmail.com</small>
-              <small>測試密碼: test</small>
+              <small>測試帳號：test@gmail.com</small>
+              <small>測試密碼：test</small>
           </div>
         </el-form>
 
