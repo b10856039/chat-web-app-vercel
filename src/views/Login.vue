@@ -19,7 +19,8 @@
             :rules="rules" 
             class="login-input" 
             v-loading="loading" 
-            element-loading-text="登入中...">
+            element-loading-text="登入中，請稍候...\n資料正在載入，可能需要一點時間。"
+            element-loading-custom-class="login-loading-text">
           <!-- 手機/信箱 -->
           <el-form-item label="手機/信箱" prop="inputString">
             <el-input v-model="formData.inputString" placeholder="輸入手機或信箱" />
@@ -45,11 +46,13 @@
           <div class="login-submit">
             <el-button type="primary" @click="handleLogin">登入</el-button>
           </div>
+
+          <div class="test-account">
+              <small>測試帳號: test@gmail.com</small>
+              <small>測試密碼: test</small>
+          </div>
         </el-form>
-        <div class="test-account">
-            <small>測試帳號: test@gmail.com</small>
-            <small>測試密碼: test</small>
-        </div>
+
       </div>
     </div>
   </div>
@@ -277,6 +280,11 @@
   .test-account{
     display: flex;
     flex-direction: column;
+  }
+
+  .login-loading-text .el-loading-text {
+    white-space: pre-line; /* 支援 \n 換行 */
+    text-align: center; /* 可選，讓多行居中 */
   }
 
   /* ==========================
