@@ -1,13 +1,13 @@
 <template>
     <div class="content-area">
         <div class="content-header">
-                <h3 v-if="currentSection === 'all'">全部</h3>
-                <h3 v-if="currentSection === 'friends'">朋友</h3>
-                <h3 v-if="currentSection === 'groups'">群組</h3>
-                <h3 v-if="currentSection === 'manage'">管理功能</h3>
+                <h3 v-if="roomStore.currentSection === 'all'">全部</h3>
+                <h3 v-if="roomStore.currentSection === 'friends'">朋友</h3>
+                <h3 v-if="roomStore.currentSection === 'groups'">群組</h3>
+                <h3 v-if="roomStore.currentSection === 'manage'">管理功能</h3>
         </div>
         <div class="content-body">
-            <div v-if="currentSection !== 'manage'"  class="content-search">
+            <div v-if="roomStore.currentSection !== 'manage'"  class="content-search">
                 <el-input
                     v-model="searchContent"
                     :placeholder="placeholderText"
@@ -21,8 +21,8 @@
                     </template>
                 </el-input>
             </div>
-            <div v-if="currentSection === 'all' || currentSection === 'friends' || currentSection === 'groups'" class="content-section">
-                <div v-for="(room, index) in roomList" :key="room.id" v-on:click="selectChatRoom(index)" :class="['content-chatroom', { 'selected-room': selectRoom!=null && selectRoom.id === room.id , 'room-hidden': !isMatch(room, searchContent) }]">
+            <div v-if="roomStore.currentSection === 'all' || roomStore.currentSection === 'friends' || roomStore.currentSection === 'groups'" class="content-section">
+                <div v-for="(room, index) in roomStore.roomList" :key="room.id" v-on:click="selectChatRoom(index)" :class="['content-chatroom', { 'selected-room': selectRoom!=null && selectRoom.id === room.id , 'room-hidden': !isMatch(room, searchContent) }]">
 
                     <div class="content-avatar">
                         <el-avatar v-if="room.photoImg && room.photoImg !== ''" :size="50" :src="room.photoImg"/>
@@ -31,7 +31,7 @@
                     </div>
                     <div class="content-container">
                         <div class="content-roomname">
-                            <span v-if="room.roomType == 1" class="roomname-title">{{ room.roomname }}({{ room.participants.length }})</span>
+                            <span v-if="room.roomType == 1" class="roomname-title">{{ room.roomname }}({{ room.participants.filter(p => p.isActive).length }})</span>
                             <span v-else class="roomname-title">{{ room.roomname }}</span>
                             <small v-if="room.latestMessage && room.latestMessage.sentAt" class="roomname-latestTime">
                                 
@@ -45,18 +45,18 @@
                         </div>
                     </div>
                 </div>
-                <div v-if="roomList.length == 0" class="no-data">
+                <div v-if="roomStore.roomList.length == 0" class="no-data">
                     <span>無資料</span>
                 </div>
             </div>
-            <div v-if="currentSection === 'manage'" class="content-section">
+            <div v-if="roomStore.currentSection === 'manage'" class="content-section">
                 <div class="content-manage-header">
                     <div v-on:click="selectManageType = true" :class="{ 'active': selectManageType }">朋友</div>
                     <div v-on:click="selectManageType = false" :class="{ 'active': !selectManageType }">群組</div>
                 </div>
                 <div class="content-manage-body">
-                    <GroupManage v-if="!selectManageType && user" :user="user"></GroupManage>
-                    <FriendManage v-if="selectManageType && user" :user="user"></FriendManage>
+                    <GroupManage v-if="!selectManageType && userStore.user"></GroupManage>
+                    <FriendManage v-if="selectManageType && userStore.user"></FriendManage>
                 </div>
             </div>
         </div>
@@ -77,19 +77,20 @@
     import userPlaceholder from '@/assets/user.png';
 
 
+    import { useRoomStore } from '@/stores/roomStore';
+    import { useUserStore } from '@/stores/userStore';
+
+
     export default {
         components: {
             GroupManage,
             FriendManage
         },
-        emits: ['select'],
-        props:{
-            user : Object,
-            currentSection : String,
-            roomList : Array
-        },
-        setup(props,{emit})
+        setup()
         {
+            const userStore = useUserStore();
+            const roomStore = useRoomStore();
+
             const searchContent = ref('');
             const selectManageType = ref(false);
 
@@ -107,13 +108,13 @@
             };
 
             const placeholderText = computed(() => {
-                if(props.currentSection === "all")
+                if(roomStore.currentSection === "all")
                 {
                     return "輸入群組或好友名稱";
                 }
-                else if (props.currentSection === "groups") {
+                else if (roomStore.currentSection === "groups") {
                     return "輸入群組名稱";
-                } else if (props.currentSection === "friends") {
+                } else if (roomStore.currentSection === "friends") {
                     return "輸入好友名稱";
                 }
                 return "輸入內容";
@@ -127,13 +128,17 @@
 
             const selectRoom = ref(null);
             const selectChatRoom = (index) =>{
-                let select = props.roomList[index];
-                emit("select", select);
+                let select = roomStore.roomList[index];
+
+                roomStore.currentChat = select;
                 selectRoom.value = select;
             }
 
 
             return{
+                userStore,
+                roomStore,
+
                 userPlaceholder,
                 textchatPlaceholder,
                 formatDateTime,

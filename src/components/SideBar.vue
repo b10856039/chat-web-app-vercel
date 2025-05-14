@@ -35,7 +35,7 @@
         </ul>
 
         <div class="user-account">
-            <UserSetting :user="user" @userUpdate="handleEmitData"></UserSetting>
+            <UserSetting v-if="userStore.user && userStore.userReady"></UserSetting>
         </div>
     </div>
 </template>
@@ -45,32 +45,29 @@
     import {ref} from 'vue';
     import * as ElementPlusIconsVue from '@element-plus/icons-vue'
     import UserSetting from '@/components/UserSetting.vue';
+    import { useUserStore } from '@/stores/userStore';
+    import { useRoomStore } from '@/stores/roomStore';
 
     export default {
         components:{
             ElementPlusIconsVue,
             UserSetting,
         },
-        props:{
-            user : Object
-        },
-        emits: ['select','userUpdate'],
-        setup(props,{emit}) {
+        setup() {
+
+            const userStore = useUserStore();
+            const roomStore = useRoomStore();
 
             const selectedSection = ref('all'); // 初始化選中的區塊
-            const select = (section) => {
+            const select = async (section) => {
                 selectedSection.value = section; // 設定選中的區塊
-                emit("select", section);
-            }
-
-            const handleEmitData = (data) => {
-                emit('userUpdate',data)
+                await roomStore.setCurrentSection(section)
             }
 
             return {
                 select,
+                userStore,
                 selectedSection,
-                handleEmitData
             }
         }
     }

@@ -18,9 +18,12 @@
 </template>
 
 <script>
-import ExceptMessageHandler from "@/utils/fetchExceptHandler";
-import { ElMessage } from "element-plus";
-import {ref,watch} from "vue";
+    import ExceptMessageHandler from "@/utils/fetchExceptHandler";
+    import { ElMessage } from "element-plus";
+    import {ref,watch} from "vue";
+
+    // 引用store
+    import { useUserStore } from '@/stores/userStore'
 
     export default {
         props:{
@@ -28,9 +31,10 @@ import {ref,watch} from "vue";
             photoImg : String,
             apiUrl : String
         },
-        emits:['userUpdate','AvatarUpdate'],
+        emits:['AvatarUpdate'],
         setup(props,{emit}){
 
+            const userStore = useUserStore();
 
             const userPhoto = ref(null);  // 用來儲存圖片文件
             const propPhotoImg = ref(props.photoImg);
@@ -116,7 +120,7 @@ import {ref,watch} from "vue";
                         ElMessage.success(data.data);
                         editData.value = null;
                         userPhoto.value = null;
-                        emit("userUpdate",true);
+                        userStore.refreshUser();
                     }
                     else
                     {

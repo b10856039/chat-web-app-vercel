@@ -45,7 +45,7 @@
                         </div>
                     </div>
                     <div class="friend-option">
-                        <el-icon class="clickable-icon" v-on:click="showDeleteFriend = true;processUserId = user.id;EditFriend = friend; EditAction = 'reject'"><Delete /></el-icon>
+                        <el-icon class="clickable-icon" v-on:click="showDeleteFriend = true;processUserId = userStore.user.id;EditFriend = friend; EditAction = 'reject'"><Delete /></el-icon>
                     </div>
                 </div>
             </div>
@@ -81,10 +81,10 @@
                             <template #content>
                                 <el-dropdown-menu>
                                     <el-dropdown-item  
-                                        v-on:click="showAddFriendInvite = true; processUserId = user.id; EditFriend = friend; EditAction = 'accept'" 
+                                        v-on:click="showAddFriendInvite = true; processUserId = userStore.user.id; EditFriend = friend; EditAction = 'accept'" 
                                         icon="edit">添加</el-dropdown-item>
                                     <el-dropdown-item  
-                                        v-on:click="showRejectFriendInvite = true; processUserId = user.id; EditFriend = friend; EditAction = 'reject'" 
+                                        v-on:click="showRejectFriendInvite = true; processUserId = userStore.user.id; EditFriend = friend; EditAction = 'reject'" 
                                         icon="delete">拒絕</el-dropdown-item>
                                 </el-dropdown-menu>
                             </template>
@@ -177,16 +177,19 @@
     import getImageType from "@/utils/imageHandle";
     import userPlaceholder from "@/assets/user.png";
     import ExceptMessageHandler from "@/utils/fetchExceptHandler";
+    import { useUserStore } from "@/stores/userStore";
+    import { useRoomStore } from "@/stores/roomStore";
 
 export default {
     components: {
         CustomDialog,
         DropDown
     },
-    props: {
-        user: Object
-    },
-    setup(props) {
+    setup() {
+
+        const userStore = useUserStore();
+        const roomStore = useRoomStore();
+
         const searchContent = ref('');
         const showAddFriend = ref(false);
         const searchUnFriend = ref('');
@@ -200,7 +203,7 @@ export default {
         // 獲取好友列表
         const getFriendshipsList = async () => {
             try {
-                const url = new URL(import.meta.env.VITE_API_URL + "friendships/" + props.user.userId);
+                const url = new URL(import.meta.env.VITE_API_URL + "friendships/" + userStore.user.userId);
                 const response = await fetch(url, {
                     method: "GET",
                     headers: {
@@ -247,7 +250,7 @@ export default {
         // 獲取未添加的好友
         const getUnAddFriendList = async () => {
             try {
-                const url = new URL(import.meta.env.VITE_API_URL + `friendships/non-friends/${props.user.userId}`);
+                const url = new URL(import.meta.env.VITE_API_URL + `friendships/non-friends/${userStore.user.userId}`);
                 if (searchUnFriend.value) {
                     url.searchParams.append("search", searchUnFriend.value);
                 }
@@ -296,7 +299,7 @@ export default {
                         "Authorization": `Bearer ${localStorage.getItem('token')}`
                     },
                     body: JSON.stringify({
-                        requesterId: props.user.userId,
+                        requesterId: userStore.user.userId,
                         receiverId
                     })
                 });
@@ -384,6 +387,14 @@ export default {
                 }
                 showDeleteFriend.value = false
 
+                if (roomStore.currentChat) {
+                    try {
+                        roomStore.currentChat = null;
+                    } catch (error) {
+                        console.error("Error leaving chat room:", error);
+                    }
+                }
+
             } catch (error) {
                 console.log("發送好友設定失敗", error);
             }
@@ -406,6 +417,7 @@ export default {
         onMounted(getFriendshipsList);
 
         return {
+            userStore,
             searchContent,
             showDeleteFriend,
             showAddFriend,

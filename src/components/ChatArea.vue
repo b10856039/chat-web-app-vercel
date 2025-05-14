@@ -1,5 +1,5 @@
 <template>
-    <div v-if="!currentChat" class="no-data">
+    <div v-if="!roomStore.currentChat" class="no-data">
         <p>開始聊天吧!</p>
     </div>
     <div v-else class="chat-area">
@@ -10,11 +10,12 @@
                 </el-icon>
             </div>
             <div class="header-roomname">
-                <h3>{{ currentChat.roomname }}</h3>
+                <h3>{{ roomStore.currentChat.roomname }}</h3>
             </div>
         </div>
-        <div class="chat-message">
+        <div class="chat-message" ref="messageContainer">
             <div
+                v-if="messages.length > 0"
                 v-for="(message, index) in messages"
                 :key="message.Id"
                 :class="{'my-message': message.isMine, 'other-message': !message.isMine}"
@@ -41,6 +42,9 @@
                     </div>
                 </div>
             </div>
+            <div v-else class="chat-message-none">
+                <div>開始聊天吧!</div>
+            </div>
         </div>
         <div class="chat-input">
             <div class="input-wrapper">
@@ -65,204 +69,206 @@
 </template>
 
 <script>
-    import { ElMessage } from 'element-plus';
-    import {ref,onMounted, onUnmounted,watch, inject} from 'vue'
-    import * as signalR from '@microsoft/signalr';
-    import formatDateTime from "@/utils/dateFormatter";
-    import ExceptMessageHandler from "@/utils/fetchExceptHandler";
+// chatarea.vue
 
-    export default {
-        props:{
-            user : Object,
-            currentChat : Object,
-        },
-        emits:['MessageUpdate'],
-        setup(props,{emit})
-        {
-            const newMessage = ref('');
-            const messages = ref([]);
-            const errorMessages = ref("");
-            const connection = inject("connection");
-            const loading = ref(false);
+import { ref, watch, onMounted,nextTick } from 'vue'
+import formatDateTime from "@/utils/dateFormatter";
+import ExceptMessageHandler from "@/utils/fetchExceptHandler";
+import { ElMessage } from "element-plus";
 
-            const shouldShowDate = (index, message) => {
-                if (index === 0) return true; // 第一則訊息一定顯示日期
-                const prevMessage = messages.value[index - 1];
-                return formatDateTime(prevMessage.sentAt, 3) !== formatDateTime(message.sentAt, 3);
-            };
+import { useUserStore } from '@/stores/userStore';
+import { useRoomStore } from '@/stores/roomStore';
+import { useSignalRStore } from '@/stores/signalrStore';
 
-            const getHistoryMessages = async (newChat) => {
-                try{
-                const url = new URL( import.meta.env.VITE_API_URL + "message");
-                url.searchParams.append('userId', props.user.userId);
+export default {
+    setup() {
+        const userStore = useUserStore();
+        const roomStore = useRoomStore();
+        const signalrStore = useSignalRStore();
+
+        const newMessage = ref('');
+        const messages = ref([]);
+        const errorMessages = ref("");
+        const loading = ref(false);
+        const isSending = ref(false);
+        const messageContainer = ref(null);
+
+        const shouldShowDate = (index, message) => {
+            if (index === 0) return true;
+            const prevMessage = messages.value[index - 1];
+            return formatDateTime(prevMessage.sentAt, 3) !== formatDateTime(message.sentAt, 3);
+        };
+
+        const getHistoryMessages = async (newChat) => {
+            try {
+                const url = new URL(import.meta.env.VITE_API_URL + "message");
+                url.searchParams.append('userId', userStore.user.userId);
                 url.searchParams.append('chatroomId', newChat.id);
-                url.searchParams.append('latestOne',false)
+                url.searchParams.append('latestOne', false);
 
                 const response = await fetch(url, {
                     method: "GET",
                     headers: {
-                    "Content-Type": "application/json", 
-                    "Authorization": `Bearer ${localStorage.getItem('token')}`
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem('token')}`
                     }
                 });
 
                 const data = await response.json();
-                if(data.errors===null)
-                {
+                if (data.errors === null) {
                     messages.value = data.data.map((message) => ({
                         ...message,
-                        isMine: message.senderId === props.user.userId, // 根據 senderId 判斷
+                        isMine: message.senderId === userStore.user.userId,
                     }));
-                }
-                else
-                {
+                } else {
                     ExceptMessageHandler(data.errors);
                 }
-
-
-
-                }
-                catch(error)
-                {
-                    console.log(error);
-                }
+            } catch (error) {
+                console.log(error);
             }
+        };
 
-            // 發送訊息的函數
-            const sendMessage = async () => {
-                if (newMessage.value.trim() !== "") {
-                    loading.value = true;
-                    try {
-                        // 發送訊息到 SignalR Hub
-                        await connection.value.invoke('SendMessage', props.currentChat.id, props.user.userId, newMessage.value);
-                        loading.value = false;
-                        emit('MessageUpdate', true);
-                        newMessage.value = "";  // 清空輸入框
-                    } catch (err) {
-                        console.error("Error sending message: ", err);
-                        // 如果有錯誤，顯示錯誤消息
-                        errorMessages.value = "無法傳送訊息，請稍後再嘗試";
-                        loading.value = false;
-                    }
-                }
-            };
-
-            const leaveChatroom = async () => {
-                if (props.currentChat) {
-                    try {
-                        // 1. 透過 SignalR 退出聊天室
-                        await connection.value.invoke("LeaveChatRoom", props.currentChat.id);
-
-                        // 2. 解除 "ReceiveMessage" 事件監聽，避免離開聊天室後仍接收訊息
-                        connection.value.off("ReceiveMessage");
-
-                        // 3. 清空 messages 訊息列表
-                        messages.value = [];
-
-                        // 4. 清空 currentChat，讓畫面回到「開始聊天吧！」畫面
-                        emit("update:currentChat", null);
-                    } catch (error) {
-                        console.error("Error leaving chat room:", error);
-                    }
-                }
-            };
-
-            function getImageType(base64) {
-                const pngSignature = 'iVBORw0KGgo';
-                const jpegSignature = '/9j/';
-                const gifSignature = 'R0lGODlh';
-
-                let imagetype = '';
+        const sendMessage = async () => {
+            // 檢查是否正在發送中，如果是，則不處理
+            if (newMessage.value.trim() !== "" && !isSending.value) {
+                isSending.value = true;  // 設置為正在發送
+                loading.value = true;
                 
-                if (base64.startsWith(pngSignature)) {
-                    imagetype = 'image/png';
-                }
-                if (base64.startsWith(jpegSignature)) {
-                    imagetype = 'image/jpeg';
-                }
-                if (base64.startsWith(gifSignature)) {
-                    imagetype = 'image/gif';
-                }
+                try {
+                    // 發送訊息
+                    await signalrStore.sendMessage(roomStore.currentChat.id, userStore.user.userId, newMessage.value);
 
-                if(imagetype == '')
-                {
-                    return '';
-                }else{
-                    base64 = 'data:' + imagetype + ';base64,' + base64;
-                    return base64
+                    
+                    // 訊息發送後更新狀態
+                    await roomStore.handleCurrentChatLatestMsg();
+                    newMessage.value = "";  // 清空輸入框
+                    console.log(messages.value)
+                    
+                    loading.value = false;
+                } catch (err) {
+                    console.error("Error sending message: ", err);
+                    errorMessages.value = "無法傳送訊息，請稍後再嘗試";
+                    loading.value = false;
+                } finally {
+                    isSending.value = false;  // 發送完成，重置 flag
                 }
             }
+        };
 
-
-
-            // 監聽 props.currentChat 的變化
-            watch(() => props.currentChat, async (newChat, oldChat) => {
-                if (newChat !== null) {
-                    if (connection.value) {
-                        // 離開舊的聊天室
-                        if (oldChat) {
-                            connection.value.invoke("LeaveChatRoom", oldChat.id)
-                                .catch(err => console.error("Error leaving chat room:", err));
-                        }
-
-                        // **先解除舊的 "ReceiveMessage" 監聽**
-                        connection.value.off("ReceiveMessage");
-
-                        // 加入新的聊天室
-                        connection.value.invoke("JoinChatRoom", newChat.id)
-                            .catch(err => console.error("Error joining chat room:", err));
-
-                        // **重新綁定 "ReceiveMessage" 事件**
-                        connection.value.on("ReceiveMessage", (message) => {
-                            messages.value.push({
-                                ...message,
-                                isMine: message.senderId === props.user.userId, 
-                            });
-
-                            emit('MessageUpdate', true);
-                        });
-
-                        // **清空舊的訊息**
-                        messages.value = [];
-
-                        await getHistoryMessages(newChat);
-                    }
-                }
-            });
-
-            watch( ()=> props.user, async (newUser) => {
-                if(props.currentChat != null){
-                    connection.value.off("ReceiveMessage");
-
-                    connection.value.on("ReceiveMessage", (message) => {
-                        messages.value.push({
-                            ...message,
-                            isMine: message.senderId === newUser.userId, 
-                        });
-
-                        emit('MessageUpdate', true);
-                    });
-
-                    // **清空舊的訊息**
+        const leaveChatroom = async () => {
+            if (roomStore.currentChat) {
+                try {
                     messages.value = [];
-                    await getHistoryMessages(props.currentChat);
+                    roomStore.currentChat = null;
+                } catch (error) {
+                    console.error("Error leaving chat room:", error);
                 }
-            })
+            }
+        };
 
-            return {
-                shouldShowDate,
-                formatDateTime,
-                newMessage,
-                connection,
-                getImageType,
-                messages,
-                sendMessage,
-                errorMessages,
-                leaveChatroom,
-                loading
+        function getImageType(base64) {
+            const pngSignature = 'iVBORw0KGgo';
+            const jpegSignature = '/9j/';
+            const gifSignature = 'R0lGODlh';
+
+            let imagetype = '';
+
+            if (base64.startsWith(pngSignature)) {
+                imagetype = 'image/png';
+            }
+            if (base64.startsWith(jpegSignature)) {
+                imagetype = 'image/jpeg';
+            }
+            if (base64.startsWith(gifSignature)) {
+                imagetype = 'image/gif';
+            }
+
+            if (imagetype == '') {
+                return '';
+            } else {
+                base64 = 'data:' + imagetype + ';base64,' + base64;
+                return base64;
             }
         }
+
+        const scrollToBottom = () => {
+            nextTick(() => {
+                if (messageContainer.value) {
+                    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+                }
+            });
+        };
+
+        onMounted(async () => {
+
+            if (roomStore.currentChat && signalrStore.connection) {
+                await signalrStore.joinRoom(roomStore.currentChat.id);
+            }
+
+            signalrStore.registerMessageHandler(async (message) => {
+                if (!roomStore.currentChat || message.chatRoomId !== roomStore.currentChat.id) {
+                    return;
+                }
+
+                messages.value.push({
+                    ...message,
+                    isMine: message.senderId === userStore.user.userId,
+                });
+
+                await roomStore.handleCurrentChatLatestMsg();
+                scrollToBottom();
+            });
+
+            signalrStore.connection.on("ReceiveError", (message) => {
+                console.error("Error received from server:", message);
+                // 顯示錯誤訊息
+                errorMessages.value = message;
+
+                // 若聊天室被刪除，導回聊天室清單頁或清除 currentChat
+                if (message.includes("deleted") || message.includes("not found")) {
+                    ElMessage.warning("該聊天室已被刪除，您將被導出。");
+                    roomStore.currentChat = null;
+                    messages.value = [];
+                }
+            });
+        });
+
+
+        watch(() => roomStore.currentChat, async (newChat) => {
+            if (newChat !== null && signalrStore.connection) {
+
+                await signalrStore.joinRoom(newChat.id);
+                messages.value = [];
+                await getHistoryMessages(newChat);
+                scrollToBottom();
+            }
+        });
+
+        // 切換使用者時重新載入聊天
+        watch(() => userStore.user, async (newUser) => {
+            if (roomStore.currentChat != null) {
+                messages.value = [];
+                await getHistoryMessages(roomStore.currentChat);
+                scrollToBottom();
+            }
+        });
+
+        return {
+            roomStore,
+            shouldShowDate,
+            formatDateTime,
+            newMessage,
+            getImageType,
+            messages,
+            sendMessage,
+            errorMessages,
+            leaveChatroom,
+            loading,
+            messageContainer,
+        };
     }
+}
+
 </script>
 
 
@@ -416,6 +422,13 @@
             margin-top: auto;
             padding: 5px;
         }
+    }
+
+    .chat-message-none{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color:#999;
     }
 
     .chat-input {

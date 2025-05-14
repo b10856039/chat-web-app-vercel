@@ -47,8 +47,8 @@
           </div>
 
           <div class="test-account">
-              <small>公用展示帳號：test@gmail.com</small>
-              <small>公用展示密碼：test</small>
+              <small>公開展示帳號：test@gmail.com</small>
+              <small>公開展示密碼：test</small>
           </div>
         </el-form>
 

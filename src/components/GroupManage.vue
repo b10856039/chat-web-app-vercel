@@ -77,10 +77,15 @@
         :beforeClose="function(){showAddGroup = false;AddRoomName = ''}"
     >
         <template #content>
+            <div class="dialog-avatarHeader">
+                <AvatarUploader :defaultImgUrl="defaultImgUrl" @AvatarUpdate="handleAvatarAdd"></AvatarUploader>
+            </div>
+            <div class="dialog-avatarBody">
+                <el-form-item label="新群組名稱:" prop="AddRoomName">
+                    <el-input v-model="AddRoomName" placeholder="輸入群組名稱"/>
+                </el-form-item>
+            </div>
 
-            <AvatarUploader :defaultImgUrl="defaultImgUrl" @AvatarUpdate="handleAvatarAdd"></AvatarUploader>
-
-            <input type="text" placeholder="輸入群組名稱" v-model="AddRoomName">
         </template>
         <template #footer>
         <el-button @click="showAddGroup = false">取消</el-button>
@@ -93,8 +98,16 @@
         title="編輯群組"
     >
         <template #content>
-            <AvatarUploader :defaultImgUrl="defaultImgUrl" :photoImg="EditAvatar" @AvatarUpdate="handleAvatarUpdate"></AvatarUploader>
-            <input type="text" placeholder="群組名稱" v-model="EditRoomName">
+            <div class="dialog-avatarHeader">
+                <AvatarUploader :defaultImgUrl="defaultImgUrl" :photoImg="EditAvatar" @AvatarUpdate="handleAvatarUpdate"></AvatarUploader>
+            </div>
+            <div class="dialog-avatarBody">
+                <el-form-item label="群組名稱:" prop="EditRoomName">
+                    <el-input v-model="EditRoomName" placeholder="群組名稱"/>
+                </el-form-item>
+            </div>
+
+
         </template>
         <template #footer>
         <el-button @click="showEditGroup = false">取消</el-button>
@@ -151,6 +164,8 @@
     import getImageType from "@/utils/imageHandle";
     import textPlaceholder from "@/assets/textchat.png";
     import ExceptMessageHandler from "@/utils/fetchExceptHandler";
+    import { useUserStore } from "@/stores/userStore";
+    import { useRoomStore } from "@/stores/roomStore";
 
     export default{
         components:{
@@ -158,11 +173,11 @@
             DropDown,
             AvatarUploader
         },
-        props:{
-            user : Object
-        },
-        setup(props)
+        setup()
         {
+
+            const userStore = useUserStore();
+            const roomStore = useRoomStore();
             
             const searchContent = ref("");
 
@@ -172,12 +187,11 @@
             const showLeaveGroup = ref(false);
             const showDeleteGroup = ref(false);
             const processRoomId = ref(null);
-
             
             const hasjoinRoomList = ref([]);
             const unjoinRoomList = ref([]);
 
-
+            
             const defaultImgUrl = ref("src/assets/textchat.png");
 
             const isMatch = (room, search) => {
@@ -206,7 +220,7 @@
                 try
                 {
                     const url = new URL( import.meta.env.VITE_API_URL + "chatroom");
-                    url.searchParams.append('userId', props.user.userId);
+                    url.searchParams.append('userId', userStore.user.userId);
                     
 
                     const roomType = 1;
@@ -274,7 +288,7 @@
 
                     const newData = {
                         "Roomname": AddRoomName.value,
-                        "CreatedByUserId":props.user.userId,
+                        "CreatedByUserId":userStore.user.userId,
                         "RoomType":1
                     }
 
@@ -302,6 +316,15 @@
 
                         await getRoomList(false);
                         await getRoomList(true);
+
+                        if (roomStore.currentChat) {
+                            try {
+                                roomStore.currentChat = null;
+                            } catch (error) {
+                                console.error("Error leaving chat room:", error);
+                            }
+                        }
+
                     }
                     else
                     {
@@ -329,7 +352,7 @@
                 
                     const newData = {
                         "Roomname": EditRoomName.value,
-                        "UserId" : props.user.userId
+                        "UserId" : userStore.user.userId
                     }
 
                     if(EditRoomName.value!= null){
@@ -374,7 +397,7 @@
             const handleDeleteGroupConfirm = async ()=>{
                 try{
                     const url = new URL( import.meta.env.VITE_API_URL + "chatroom/" + processRoomId.value);
-                    url.searchParams.append('userId',props.user.userId);
+                    url.searchParams.append('userId',userStore.user.userId);
                     // const url = "http://localhost:5266/api/chatroom/" + processRoomId.value
 
                     const response = await fetch(url, {
@@ -394,6 +417,15 @@
 
                         await getRoomList(false);
                         await getRoomList(true);
+
+                        if (roomStore.currentChat) {
+                            try {
+                                roomStore.currentChat = null;
+                            } catch (error) {
+                                console.error("Error leaving chat room:", error);
+                            }
+                        }
+
                     }
                     else
                     {
@@ -420,7 +452,7 @@
                         "Authorization": `Bearer ${localStorage.getItem('token')}`
                         },
                         body:JSON.stringify({
-                            "UserId": props.user.userId
+                            "UserId": userStore.user.userId
                         })          
                     });
                     const data = await response.json();
@@ -433,6 +465,14 @@
 
                         await getRoomList(false);
                         await getRoomList(true);
+
+                        if (roomStore.currentChat) {
+                            try {
+                                roomStore.currentChat = null;
+                            } catch (error) {
+                                console.error("Error leaving chat room:", error);
+                            }
+                        }
                     }
                     else
                     {
@@ -456,7 +496,7 @@
                         "Authorization": `Bearer ${localStorage.getItem('token')}`
                         },
                         body:JSON.stringify({
-                            "UserId": props.user.userId
+                            "UserId": userStore.user.userId
                         })                
                     });
                     const data = await response.json();
@@ -468,6 +508,15 @@
 
                         await getRoomList(false);
                         await getRoomList(true);
+
+                        if (roomStore.currentChat) {
+                            try {
+                                roomStore.currentChat = null;
+                            } catch (error) {
+                                console.error("Error leaving chat room:", error);
+                            }
+                        }
+
                     }
                     else
                     {
@@ -483,7 +532,7 @@
 
             const checkUserRole = (room)=>{
                 const participants = room.participants;
-                const userRole = participants.find( p => p.userId == props.user.userId);
+                const userRole = participants.find( p => p.userId == userStore.user.userId);
                 if(userRole.role == 0){
                     return true;
                 }else{
@@ -608,6 +657,15 @@
 
     .clickable-icon {
         cursor: pointer;
+    }
+
+    .dialog-avatarHeader{
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e8e8e8;
+    }
+
+    .dialog-avatarBody{
+        padding-top: 20px;
     }
 
     .no-data{

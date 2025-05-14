@@ -1,17 +1,17 @@
 <template>
-    <el-avatar v-if="user.photoImg && user.photoImg !== ''" :size="50" :src="user.photoImg" @click="toggleDropdown"/>
+    <el-avatar v-if="userStore.user.photoImg && userStore.user.photoImg !== ''" :size="50" :src="userStore.user.photoImg" @click="toggleDropdown"/>
     <el-avatar v-else :src="userPlaceholder" :size="50" @click="toggleDropdown"></el-avatar>
   
     <DropDown ref="dropdownElement" trigger="manual" :show-icon="false">
       <template #content>
         <div class="dropdown-header">
           <div class="dropdown-icon">
-            <el-avatar v-if="user.photoImg && user.photoImg !== ''" :size="50" :src="user.photoImg"/>
+            <el-avatar v-if="userStore.user.photoImg && userStore.user.photoImg !== ''" :size="50" :src="userStore.user.photoImg"/>
             <el-avatar v-else :src="userPlaceholder" :size="50"></el-avatar>
           </div>
           <div class="dropdown-name">
-            <p class="dropdown-showname">{{ user.showname }}</p>
-            <span class="dropdown-username">{{ user.username }}</span>
+            <p class="dropdown-showname">{{ userStore.user.showname }}</p>
+            <span class="dropdown-username">{{ userStore.user.username }}</span>
           </div>
         </div>
         <div class="dropdown-body">
@@ -107,26 +107,29 @@
     import { ElMessage } from 'element-plus';
     import ExceptMessageHandler from "@/utils/fetchExceptHandler";
 
+    // 引用store
+    import { useUserStore } from '@/stores/userStore'
+
     export default {
         components:{
             CustomDialog,
             DropDown,
             AvatarUploader
         },
-        props:{
-            user : Object
-        },
-        emits: ['userUpdate'],
-        setup(props,{emit}) {
+        setup() {
+
+            const userStore = useUserStore();
+
+            console.log(userStore.user)
 
             const showEditUser = ref(false);
             const userForm = ref(null);
             const passForm = ref(null);
-            const editUser = ref({ ...props.user });
+            const editUser = ref({ ...userStore.user });
             const oldPassword = ref('');
             const newPassword = ref('');
 
-            const avatarUploadUrl = ref(import.meta.env.VITE_API_URL + "user/" + props.user.userId);
+            const avatarUploadUrl = ref(import.meta.env.VITE_API_URL + "user/" + userStore.user.userId);
             const defaultImgUrl = ref("../assets/user.png");
 
             const rules = {
@@ -202,20 +205,20 @@
                     // 驗證通過，繼續執行 API 呼叫
                     const editData = {};
 
-                    if (editUser.value.username !== props.user.username) {
+                    if (editUser.value.username !== userStore.user.username) {
                         editData.Username = editUser.value.username;
                     }
-                    if (editUser.value.showname !== props.user.showname) {
+                    if (editUser.value.showname !== userStore.user.showname) {
                         editData.ShowUsername = editUser.value.showname;
                     }
-                    if (editUser.value.email !== props.user.email) {
+                    if (editUser.value.email !== userStore.user.email) {
                         editData.Email = editUser.value.email;
                     }
-                    if (editUser.value.phone !== props.user.phone) {
+                    if (editUser.value.phone !== userStore.user.phone) {
                         editData.Phone = editUser.value.phone;
                     }
 
-                    const url = new URL(import.meta.env.VITE_API_URL + "user/" + props.user.userId);
+                    const url = new URL(import.meta.env.VITE_API_URL + "user/" + userStore.user.userId);
                     const response = await fetch(url, {
                         method: "PATCH",
                         headers: {
@@ -231,7 +234,7 @@
                     {
                         ElMessage.success(data.data);
                         isEditingUserInfo.value = false;
-                        emit("userUpdate", true);
+                        userStore.refreshUser();
                     }
                     else
                     {
@@ -275,7 +278,7 @@
                 };
 
                 try {
-                    const url = new URL(import.meta.env.VITE_API_URL + "user/" + props.user.userId);
+                    const url = new URL(import.meta.env.VITE_API_URL + "user/" + userStore.user.userId);
 
                     const response = await fetch(url, {
                         method: "PATCH",
@@ -305,7 +308,7 @@
             }
 
             const handleEmitData = (value) => {
-                emit('userUpdate',value)
+                userStore.refreshUser();
             }
 
             const dropdownElement = ref(null); 
@@ -321,7 +324,7 @@
                     newPassword.value = '';
                 }
                 else{
-                    editUser.value = { ...props.user };
+                    editUser.value = { ...userStore.user };
                     oldPassword.value = '';
                     newPassword.value = '';
                     showEditUser.value = false;
@@ -335,12 +338,13 @@
             const logout = async () =>{
                 // 清除 localStorage 中的 token
                 localStorage.removeItem('token');
-                props.user.value = null;
+                userStore.user= null;
                 router.push('/login');
             }
 
 
             return {
+                userStore,
                 userPlaceholder,
                 logout,
                 dropdownElement,
