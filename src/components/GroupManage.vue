@@ -565,7 +565,7 @@
                 showLeaveGroup,
 
                 handleAddGroupConfirm,
-                handleAddDialogClose
+                handleAddDialogClose,
                 handleEditGroupConfirm,
                 handleDeleteGroupConfirm,
                 handleJoinGroupConfirm,
