@@ -68,10 +68,16 @@ export const useUserStore = defineStore('user', () => {
         await getUser(parseInt(payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']));
     };
 
+    const reset = () => {
+        user.value = null;
+        currentChat.userReady = false;
+    }
+
     return {
         user,
         userReady,
         getUser,
-        refreshUser
+        refreshUser,
+        reset
     };
 });

@@ -109,6 +109,8 @@
 
     // 引用store
     import { useUserStore } from '@/stores/userStore'
+    import { useRoomStore } from '@/stores/roomStore';
+    import { useSignalRStore } from '@/stores/signalrStore';
 
     export default {
         components:{
@@ -119,6 +121,8 @@
         setup() {
 
             const userStore = useUserStore();
+            const roomStore = useRoomStore();
+            const signalRStore = useSignalRStore();
 
             const showEditUser = ref(false);
             const userForm = ref(null);
@@ -336,7 +340,11 @@
             const logout = async () =>{
                 // 清除 localStorage 中的 token
                 localStorage.removeItem('token');
-                userStore.user= null;
+                
+                await signalRStore.reset(); // 確保 SignalR 關閉
+                userStore.reset();
+                roomStore.reset();
+
                 router.push('/login');
             }
 

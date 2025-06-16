@@ -116,6 +116,12 @@ export const useRoomStore = defineStore('room', () => {
         }
     };
 
+    const reset = () => {
+        roomList.value = [];
+        currentSection.value = 'all';
+        currentChat.value = null;
+    }
+    
     return {
         roomList,
         currentSection,
@@ -123,6 +129,7 @@ export const useRoomStore = defineStore('room', () => {
         setCurrentSection,
         getRoomList,
         handleCurrentChatLatestMsg,
-        getLatestMessages
+        getLatestMessages,
+        reset
     };
 });

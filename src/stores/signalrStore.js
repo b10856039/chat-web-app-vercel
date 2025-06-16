@@ -67,6 +67,12 @@ export const useSignalRStore = defineStore('signalR', () => {
         }
     };
 
+    const reset = async () => {
+        await stopConnection(); // 確保關閉連線
+        messageCallback.value = null;
+    };
+
+
     return {
         connection,
         initConnection,
@@ -74,6 +80,7 @@ export const useSignalRStore = defineStore('signalR', () => {
         joinRoom,
         leaveRoom,
         stopConnection,
-        registerMessageHandler
+        registerMessageHandler,
+        reset
     };
 });
