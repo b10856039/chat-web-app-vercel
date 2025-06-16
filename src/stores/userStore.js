@@ -70,7 +70,7 @@ export const useUserStore = defineStore('user', () => {
 
     const reset = () => {
         user.value = null;
-        currentChat.userReady = false;
+        user.userReady = false;
     }
 
     return {
