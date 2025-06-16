@@ -75,8 +75,8 @@
 
 
           console.log(userStore.user);
-          console.log(roomStore.roomList);
-          console.log(signalrStore.connection)
+          console.log(roomStore.currentChat);
+          console.log(signalrStore.connection);
         } catch (error) {
           console.error(error);
           if (loadingInstance) loadingInstance.close();
