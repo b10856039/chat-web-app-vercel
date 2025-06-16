@@ -72,6 +72,11 @@
 
           //讀取畫面關閉
           loadingInstance.close();
+
+
+          console.log(userStore.user);
+          console.log(roomStore.roomList);
+          console.log(signalrStore.connection)
         } catch (error) {
           console.error(error);
           if (loadingInstance) loadingInstance.close();

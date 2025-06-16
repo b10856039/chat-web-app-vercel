@@ -56,7 +56,6 @@ export const useRoomStore = defineStore('room', () => {
                 ExceptMessageHandler(data.errors);
             }
 
-            console.log(roomList.value)
 
         } catch (error) {
             console.error("Error fetching chat rooms:", error);

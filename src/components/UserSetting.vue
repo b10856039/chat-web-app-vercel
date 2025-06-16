@@ -120,8 +120,6 @@
 
             const userStore = useUserStore();
 
-            console.log(userStore.user)
-
             const showEditUser = ref(false);
             const userForm = ref(null);
             const passForm = ref(null);

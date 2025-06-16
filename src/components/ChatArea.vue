@@ -142,7 +142,6 @@ export default {
                     // 訊息發送後更新狀態
                     await roomStore.handleCurrentChatLatestMsg();
                     newMessage.value = "";  // 清空輸入框
-                    console.log(messages.value)
                     
                     loading.value = false;
                 } catch (err) {
