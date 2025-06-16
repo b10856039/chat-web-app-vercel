@@ -99,7 +99,7 @@
     >
         <template #content>
             <div class="dialog-avatarHeader">
-                <AvatarUploader :defaultImgUrl="defaultImgUrl" :photoImg="EditAvatar" @AvatarUpdate="handleAvatarUpdate"></AvatarUploader>
+                <AvatarUploader v-if="showEditGroup" :defaultImgUrl="defaultImgUrl" :photoImg="EditAvatar" @AvatarUpdate="handleAvatarUpdate"></AvatarUploader>
             </div>
             <div class="dialog-avatarBody">
                 <el-form-item label="群組名稱:" prop="EditRoomName">
@@ -110,7 +110,7 @@
 
         </template>
         <template #footer>
-        <el-button @click="showEditGroup = false">取消</el-button>
+        <el-button @click="handleEditDialogClose">取消</el-button>
         <el-button type="primary" @click="handleEditGroupConfirm">完成</el-button>
         </template>
     </custom-dialog>
@@ -400,6 +400,12 @@
                 }
             }
 
+            const handleEditDialogClose = () => {
+                showEditGroup.value = false,
+                EditRoomName.value = "";
+                EditRoomAvatar.value = null;
+            }
+
             const handleDeleteGroupConfirm = async ()=>{
                 try{
                     const url = new URL( import.meta.env.VITE_API_URL + "chatroom/" + processRoomId.value);
@@ -567,6 +573,7 @@
                 handleAddGroupConfirm,
                 handleAddDialogClose,
                 handleEditGroupConfirm,
+                handleEditDialogClose,
                 handleDeleteGroupConfirm,
                 handleJoinGroupConfirm,
                 handleExitGroupConfirm,
