@@ -78,7 +78,7 @@
     >
         <template #content>
             <div class="dialog-avatarHeader">
-                <AvatarUploader :defaultImgUrl="defaultImgUrl" @AvatarUpdate="handleAvatarAdd"></AvatarUploader>
+                <AvatarUploader v-if="showAddGroup" :defaultImgUrl="defaultImgUrl" @AvatarUpdate="handleAvatarAdd"></AvatarUploader>
             </div>
             <div class="dialog-avatarBody">
                 <el-form-item label="新群組名稱:" prop="AddRoomName">
@@ -88,7 +88,7 @@
 
         </template>
         <template #footer>
-        <el-button @click="showAddGroup = false">取消</el-button>
+        <el-button @click="handleAddDialogClose">取消</el-button>
         <el-button type="primary" @click="handleAddGroupConfirm">建立</el-button>
         </template>
     </custom-dialog>
@@ -337,6 +337,12 @@
                 }
             }
 
+            const handleAddDialogClose = () => {
+                showAddGroup.value = false;
+                AddRoomName.value = '';
+                AddRoomAvatar.value = null;
+            };
+
             const EditRoomName = ref("");
             const EditRoomAvatar = ref(null);
             const handleAvatarUpdate = (value) => {
@@ -559,6 +565,7 @@
                 showLeaveGroup,
 
                 handleAddGroupConfirm,
+                handleAddDialogClose
                 handleEditGroupConfirm,
                 handleDeleteGroupConfirm,
                 handleJoinGroupConfirm,
